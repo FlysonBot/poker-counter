@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 
-from counter import CardCounterLogic
+from card_counter import CardCounterLogic
 
 
 class CardCounterApp:
