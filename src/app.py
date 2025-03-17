@@ -9,61 +9,97 @@ class CardCounterApp:
         self.root = root
         self.root.title("记牌器")
 
+        # 设置窗口透明（去掉背景）
+        self.root.attributes("-transparentcolor", "white")  # 白色部分透明
+        self.root.configure(bg="white")  # 窗口背景设置为白色
+
+        # 去掉窗口边框和标题栏
+        self.root.overrideredirect(True)
+
         # 初始化应用逻辑
         self.logic = CardCounterLogic()
 
-        # 创建标题
-        self.title_label = tk.Label(root, text="记牌器", font=("Arial", 16))
-        self.title_label.pack(pady=10)
+        # 创建表格界面
+        self.create_table()
 
-        # 创建牌区显示
-        self.card_frame = tk.Frame(root)
-        self.card_frame.pack(pady=10)
+        # 绑定键盘事件
+        self.root.bind("<KeyPress-r>", lambda event: self.reset_cards())
+        self.root.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按 Q 键退出
 
-        self.card_buttons = {}
-        for card in self.logic.cards:
-            button = tk.Button(
-                self.card_frame,
-                text=f"{card}\n{self.logic.get_card_count(card)}",
-                width=5,
-                height=2,
-                command=lambda c=card: self.mark_card(c),
+        # 绑定拖动事件
+        self.card_labels["3"].bind(
+            "<B1-Motion>", self.move_window
+        )  # 拖动第一行移动窗口
+
+    def create_table(self):
+        """创建横向表格界面"""
+        self.table_frame = tk.Frame(
+            self.root,
+            bg="lightgray",
+            bd=2,
+            relief="solid",
+            highlightbackground="red",
+            highlightthickness=2,
+        )
+        self.table_frame.pack(pady=0, fill=tk.BOTH, expand=True)
+
+        # 第一行：显示牌的名称
+        self.card_labels = {}
+        for i, card in enumerate(self.logic.cards):
+            label = tk.Label(
+                self.table_frame,
+                text=card,
+                font=("Arial", 12),
+                width=6,
+                relief="solid",
+                borderwidth=1,
+                bg="lightblue",
+                fg="black",
+                highlightbackground="red",
+                highlightthickness=1,
             )
-            button.grid(
-                row=(list(self.logic.cards.keys()).index(card) // 5),
-                column=(list(self.logic.cards.keys()).index(card) % 5),
-                padx=5,
-                pady=5,
+            label.grid(row=0, column=i, padx=0, pady=0, sticky="nsew")
+            self.card_labels[card] = label
+
+        # 第二行：显示剩余数量，并支持单击
+        self.count_labels = {}
+        for i, card in enumerate(self.logic.cards):
+            label = tk.Label(
+                self.table_frame,
+                text=self.logic.get_card_count(card),
+                font=("Arial", 12),
+                width=6,
+                relief="solid",
+                borderwidth=1,
+                bg="lightyellow",
+                fg="black",
+                highlightbackground="red",
+                highlightthickness=1,
             )
-            self.card_buttons[card] = button
+            label.grid(row=1, column=i, padx=0, pady=0, sticky="nsew")
+            label.bind(
+                "<Button-1>", lambda event, c=card: self.mark_card(c)
+            )  # 绑定单击事件
+            self.count_labels[card] = label
 
-        # 创建控制按钮
-        self.control_frame = tk.Frame(root)
-        self.control_frame.pack(pady=10)
+        # 调整窗口大小
+        self.adjust_window_size()
 
-        self.reset_button = tk.Button(
-            self.control_frame, text="重置", command=self.reset_cards
-        )
-        self.reset_button.grid(row=0, column=0, padx=5)
+    def adjust_window_size(self):
+        """调整窗口大小以适应表格"""
+        num_columns = len(self.logic.cards)
+        column_width = 61  # 每列宽度
+        row_height = 28  # 每行高度
+        window_width = num_columns * column_width
+        window_height = 2 * row_height
 
-        self.show_status_button = tk.Button(
-            self.control_frame, text="显示状态", command=self.show_status
-        )
-        self.show_status_button.grid(row=0, column=1, padx=5)
-
-        # 创建状态栏
-        self.status_label = tk.Label(
-            root, text=f"剩余牌数: {self.logic.get_total_cards()}", font=("Arial", 12)
-        )
-        self.status_label.pack(pady=10)
+        # 设置窗口大小
+        self.root.geometry(f"{window_width}x{window_height}")
 
     def mark_card(self, card):
         """处理记牌逻辑"""
         if self.logic.mark_card(card):
-            self.card_buttons[card].config(
-                text=f"{card}\n{self.logic.get_card_count(card)}"
-            )
-            self.update_status()
+            self.count_labels[card].config(text=self.logic.get_card_count(card))
         else:
             messagebox.showinfo("提示", f"没有剩余的 {card} 了！")
 
@@ -71,18 +107,16 @@ class CardCounterApp:
         """重置所有牌的数量"""
         self.logic.reset_cards()
         for card in self.logic.cards:
-            self.card_buttons[card].config(
-                text=f"{card}\n{self.logic.get_card_count(card)}"
-            )
-        self.update_status()
+            self.count_labels[card].config(text=self.logic.get_card_count(card))
         messagebox.showinfo("提示", "牌已重置！")
 
-    def show_status(self):
-        """显示当前所有牌的状态"""
-        status = self.logic.get_status()
-        messagebox.showinfo("当前状态", status)
+    def move_window(self, event):
+        """拖动窗口"""
+        x = self.root.winfo_pointerx() - self.offset_x
+        y = self.root.winfo_pointery() - self.offset_y
+        self.root.geometry(f"+{x}+{y}")
 
-    def update_status(self):
-        """更新状态栏"""
-        total = self.logic.get_total_cards()
-        self.status_label.config(text=f"剩余牌数: {total}")
+    def on_drag_start(self, event):
+        """记录拖动起始位置"""
+        self.offset_x = event.x
+        self.offset_y = event.y

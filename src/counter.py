@@ -1,9 +1,18 @@
 class CardCounterLogic:
     def __init__(self):
         # 初始化牌的数量
+        self.reset_cards()
+
+    def mark_card(self, card):
+        """减少指定牌的数量"""
+        if self.cards[card] > 0:
+            self.cards[card] -= 1
+            return True
+        return False
+
+    def reset_cards(self):
+        """重置所有牌的数量"""
         self.cards = {
-            "A": 4,
-            "2": 4,
             "3": 4,
             "4": 4,
             "5": 4,
@@ -15,19 +24,11 @@ class CardCounterLogic:
             "J": 4,
             "Q": 4,
             "K": 4,
+            "A": 4,
+            "2": 4,
+            "小王": 1,
+            "大王": 1,
         }
-
-    def mark_card(self, card):
-        """减少指定牌的数量"""
-        if self.cards[card] > 0:
-            self.cards[card] -= 1
-            return True
-        return False
-
-    def reset_cards(self):
-        """重置所有牌的数量"""
-        for card in self.cards:
-            self.cards[card] = 4
 
     def get_card_count(self, card):
         """获取指定牌的剩余数量"""
