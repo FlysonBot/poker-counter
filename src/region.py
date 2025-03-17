@@ -1,12 +1,13 @@
-import enum
+from enum import Enum
 
 import cv2
 
-from card_matcher import CardMatcher, match_single_template
+from card_matcher import CardMatcher
 from color_percentage import calculate_color_percentage
+from image_match import match_single_template
 
 
-class State(enum.Enum):
+class State(Enum):
     """
     区域状态
     """
@@ -37,36 +38,34 @@ class Region:
         """
         x1, y1 = self.top_left
         x2, y2 = self.bottom_right
-        return image[y1:y2, x1:x2]
+        self.image = image[y1:y2, x1:x2]
 
-    def update_region_state(self, region_image):
+    def update_region_state(self):
         """
         更新区域状态
-        :param region_image: 区域图像
         """
         # 首先判断区域是否是PASS状态
         if (
-            match_single_template(region_image, cv2.imread("templates/PASS.png", 0))[0]
+            match_single_template(self.image, cv2.imread("templates/PASS.png", 0))[0]
             > 0.9
         ):
             self.state = State.PASS
             return
 
         # 判断区域是否是WAIT状态
-        if calculate_color_percentage(region_image, (118, 40, 75)) > 0.9:
+        if calculate_color_percentage(self.image, (118, 40, 75)) > 0.9:
             self.state = State.WAIT
             return
 
         self.state = State.ACTIVE
 
-    def recognize_cards(self, region_image):
+    def recognize_cards(self):
         """
         识别区域内的牌
-        :param region_image: 区域图像
         :return: 识别结果（字典，键为牌面名称，值为数量）
         """
         # 调用 CardMatcher 识别牌
-        return CardMatcher(region_image).detect_all_cards()
+        return CardMatcher(self.image).detect_all_cards()
 
 
 # 示例
@@ -78,8 +77,8 @@ if __name__ == "__main__":
     test_image = cv2.imread("test.png", 0)  # 灰度模式
 
     # 截取区域
-    region_image = region_manager.capture_region(test_image)
+    region_manager.capture_region(test_image)
 
     # 判断区域状态
-    region_manager.update_region_state(region_image)
+    region_manager.update_region_state()
     print(region_manager.state)
