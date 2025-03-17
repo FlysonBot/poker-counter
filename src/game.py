@@ -5,7 +5,6 @@ from time import sleep
 import cv2
 from PIL import ImageGrab
 
-from card_counter import CardCounter
 from image_match import match_single_template
 from region import Region, State
 
@@ -58,9 +57,7 @@ class Game:
         )
 
 
-def game_loop():
-    interval = 0.2
-    counter = CardCounter()
+def game_loop(interval, counter):
 
     while True:
         # 初始化游戏对象

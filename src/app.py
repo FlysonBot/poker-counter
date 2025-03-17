@@ -1,6 +1,8 @@
+from threading import Thread
 import tkinter as tk
 
 from card_counter import CardCounter
+from game import game_loop
 
 
 class CardCounterApp:
@@ -16,19 +18,28 @@ class CardCounterApp:
         self.root.overrideredirect(True)
 
         # 初始化应用逻辑
-        self.logic = CardCounter()
+        interval = 0.2
+        self.counter = CardCounter()
+        self.current_count = self.counter.total_cards
+        game_loop(interval, self.counter)
 
         # 创建表格界面
         self.create_table()
 
         # 绑定键盘事件
-        self.root.bind("<KeyPress-r>", lambda event: self.reset_cards())
         self.root.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按 Q 键退出
 
         # 绑定拖动事件
         self.card_labels["3"].bind(
             "<B1-Motion>", self.move_window
         )  # 拖动第一行移动窗口
+
+        # 第二线程循环允许后端代码
+        thread = Thread(target=game_loop, args=(interval, self.counter), daemon=True)
+        thread.start()
+
+        # 自动更新牌数量
+        self.update_count(interval*1000)
 
     def create_table(self):
         """创建横向表格界面"""
@@ -44,7 +55,7 @@ class CardCounterApp:
 
         # 第一行：显示牌的名称
         self.card_labels = {}
-        for i, card in enumerate(self.logic.cards):
+        for i, card in enumerate(self.counter.cards):
             label = tk.Label(
                 self.table_frame,
                 text=card,
@@ -62,10 +73,10 @@ class CardCounterApp:
 
         # 第二行：显示剩余数量，并支持单击
         self.count_labels = {}
-        for i, card in enumerate(self.logic.cards):
+        for i, card in enumerate(self.counter.cards):
             label = tk.Label(
                 self.table_frame,
-                text=self.logic.get_card_count(card),
+                text=self.counter.get_card_count(card),
                 font=("Arial", 12),
                 width=6,
                 relief="solid",
@@ -83,7 +94,7 @@ class CardCounterApp:
 
     def adjust_window_size(self):
         """调整窗口大小以适应表格"""
-        num_columns = len(self.logic.cards)
+        num_columns = len(self.counter.cards)
         column_width = 61  # 每列宽度
         row_height = 28  # 每行高度
         window_width = num_columns * column_width
@@ -102,3 +113,15 @@ class CardCounterApp:
         """记录拖动起始位置"""
         self.offset_x = event.x
         self.offset_y = event.y
+
+    def update_count(self, interval):
+        """更新牌数量显示"""
+        if self.current_count != self.counter.total_cards:
+            self.current_count = self.counter.total_cards
+            
+            # 更新剩余牌数量显示
+            for card in self.counter.cards:
+                count = self.counter.get_card_count(card)
+                self.count_labels[card].config(text=str(count))
+        
+        self.root.after(interval, self.update_count, interval)

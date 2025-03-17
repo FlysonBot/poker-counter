@@ -21,6 +21,7 @@ class CardCounter:
             "2": 4,
             "王": 2,
         }
+        self.total_cards = 54
 
     def get_card_count(self, card):
         """获取指定牌的剩余数量"""
@@ -30,4 +31,5 @@ class CardCounter:
         """减少指定牌的数量"""
         if self.cards[card] > 0:
             self.cards[card] -= 1
+            self.total_cards -= 1
 
