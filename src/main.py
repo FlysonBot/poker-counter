@@ -1,6 +1,8 @@
-def main():
-    print("Hello from poker-counter!")
+import tkinter as tk
 
+from app import CardCounterApp
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = CardCounterApp(root)
+    root.mainloop()
