@@ -1,6 +1,11 @@
-from time import time
-
 import cv2
+
+
+def match_single_template(target_image, template_image):
+    """Match a single template in the target image and return location and value if found"""
+    result = cv2.matchTemplate(target_image, template_image, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    return max_val, max_loc
 
 
 class CardMatcher:
@@ -23,10 +28,8 @@ class CardMatcher:
     }
     THRESHOLD = 0.99  # 匹配相似度阈值
 
-    def __init__(self, target_image_path: str):
-        # 加载目标图像
-        self.target_image = cv2.imread(target_image_path, 0)  # 灰度模式
-        self.target_image_path = target_image_path
+    def __init__(self, target_image):
+        self.target_image = target_image  # 直接使用传入的图像
 
     def match_template_multiple(self, template_card):
         """匹配目标图像中的指定牌面"""
@@ -38,10 +41,7 @@ class CardMatcher:
 
         while True:
             # 进行模板匹配
-            result = cv2.matchTemplate(
-                target_copy, template_image, cv2.TM_CCOEFF_NORMED
-            )
-            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            max_val, max_loc = match_single_template(target_copy, template_image)
 
             # 如果匹配相似度低于阈值，停止匹配
             if max_val < CardMatcher.THRESHOLD:
@@ -70,16 +70,3 @@ class CardMatcher:
                 detected_cards[card_name] = len(matches)  # 只记录匹配数量
 
         return detected_cards
-
-
-# 示例
-if __name__ == "__main__":
-    # 创建实例并识别目标图像
-    target_image_path = "sample3.png"
-    matcher = CardMatcher(target_image_path)
-
-    # 识别目标图像中的所有牌面并计时
-    start_time = time()
-    detected_cards = matcher.detect_all_cards()
-    print(detected_cards)
-    print(f"识别结束，耗时 {time() - start_time:.2f} 秒")
