@@ -29,6 +29,7 @@ class Region:
         self.width = bottom_right[0] - top_left[0]
         self.height = bottom_right[1] - top_left[1]
         self.state = State.WAIT
+        self.is_landlord = False
 
     def capture_region(self, image):
         """

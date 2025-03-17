@@ -5,6 +5,7 @@ from time import sleep
 import cv2
 from PIL import ImageGrab
 
+from card_counter import CardCounter
 from image_match import match_single_template
 from region import Region, State
 
@@ -47,15 +48,20 @@ class Game:
 
     def determine_game_end(self, screenshot):
         # 寻找分数统计标记
-        _, max_loc = match_single_template(
+        max_val, max_loc = match_single_template(
             screenshot, cv2.imread("templates/Score.png", 0)
         )
 
         # 判断游戏结束
-        return (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
+        return (
+            max_val > 0.8 and (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
+        )
 
 
 def game_loop():
+    interval = 0.2
+    counter = CardCounter()
+
     while True:
         # 初始化游戏对象
         game = Game()
@@ -65,25 +71,33 @@ def game_loop():
             sleep(1)
 
         # 初始化
+        counter.reset()
         landlord = game.determine_landlord(ImageGrab.grab())
         for _ in range(landlord.value):
             next(game.regions)
+        screenshot = ImageGrab.grab()
+        current_region = next(game.regions)
+        current_region.is_landlord = True  # 标记地主区域
 
         # 实时记录
-        interval = 0.2
-        screenshot = ImageGrab.grab()
-        region = next(game.regions)
-
         while not game.determine_game_end(screenshot):
-            region.capture_region(screenshot)
-            region.update_region_state()
+            current_region.capture_region(screenshot)
+            current_region.update_region_state()
 
-            if region.state == State.WAIT:
+            # 如果区域处于等待状态，则等待
+            if current_region.state == State.WAIT:
                 sleep(interval)
                 continue
 
-            if region.state == State.ACTIVE:
-                print(region.recognize_cards())
+            # 如果区域有牌，则识别牌
+            if current_region.state == State.ACTIVE:
+                cards = current_region.recognize_cards()
 
-            region = next(game.regions)
+                # 标记牌
+                for card, count in cards.items():
+                    for _ in range(count):
+                        counter.mark_card(card)
+
+            # 并更新截图及当前区域
+            current_region = next(game.regions)
             screenshot = ImageGrab.grab()

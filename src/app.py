@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox
 
-from card_counter import CardCounterLogic
+from card_counter import CardCounter
 
 
 class CardCounterApp:
@@ -17,7 +16,7 @@ class CardCounterApp:
         self.root.overrideredirect(True)
 
         # 初始化应用逻辑
-        self.logic = CardCounterLogic()
+        self.logic = CardCounter()
 
         # 创建表格界面
         self.create_table()
@@ -77,9 +76,6 @@ class CardCounterApp:
                 highlightthickness=1,
             )
             label.grid(row=1, column=i, padx=0, pady=0, sticky="nsew")
-            label.bind(
-                "<Button-1>", lambda event, c=card: self.mark_card(c)
-            )  # 绑定单击事件
             self.count_labels[card] = label
 
         # 调整窗口大小
@@ -95,20 +91,6 @@ class CardCounterApp:
 
         # 设置窗口大小
         self.root.geometry(f"{window_width}x{window_height}")
-
-    def mark_card(self, card):
-        """处理记牌逻辑"""
-        if self.logic.mark_card(card):
-            self.count_labels[card].config(text=self.logic.get_card_count(card))
-        else:
-            messagebox.showinfo("提示", f"没有剩余的 {card} 了！")
-
-    def reset_cards(self):
-        """重置所有牌的数量"""
-        self.logic.reset_cards()
-        for card in self.logic.cards:
-            self.count_labels[card].config(text=self.logic.get_card_count(card))
-        messagebox.showinfo("提示", "牌已重置！")
 
     def move_window(self, event):
         """拖动窗口"""
