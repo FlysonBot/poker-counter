@@ -5,23 +5,34 @@ from card_counter import CardCounter
 from game import game_loop
 
 
-class CardCounterApp:
+class GraphicInterface:
     def __init__(self, root):
         self.root = root
         self.root.title("记牌器")
-
-        # 设置窗口透明（去掉背景）
-        self.root.attributes("-transparentcolor", "white")  # 白色部分透明
-        self.root.configure(bg="white")  # 窗口背景设置为白色
-
-        # 去掉窗口边框和标题栏
-        self.root.overrideredirect(True)
 
         # 初始化应用逻辑
         interval = 0.2
         self.counter = CardCounter()
         self.current_count = self.counter.total_cards
         game_loop(interval, self.counter)
+
+        # 第二线程循环允许后端代码
+        thread = Thread(target=game_loop, args=(interval, self.counter), daemon=True)
+        thread.start()
+
+        # 创建窗口
+        self.setup_window()
+
+        # 自动更新牌数量
+        self.update_count(interval*1000)
+
+    def setup_window(self):
+        # 设置窗口透明（去掉背景）
+        self.root.attributes("-transparentcolor", "white")  # 白色部分透明
+        self.root.configure(bg="white")  # 窗口背景设置为白色
+
+        # 去掉窗口边框和标题栏
+        self.root.overrideredirect(True)
 
         # 创建表格界面
         self.create_table()
@@ -33,13 +44,6 @@ class CardCounterApp:
         self.card_labels["3"].bind(
             "<B1-Motion>", self.move_window
         )  # 拖动第一行移动窗口
-
-        # 第二线程循环允许后端代码
-        thread = Thread(target=game_loop, args=(interval, self.counter), daemon=True)
-        thread.start()
-
-        # 自动更新牌数量
-        self.update_count(interval*1000)
 
     def create_table(self):
         """创建横向表格界面"""
