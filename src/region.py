@@ -26,8 +26,6 @@ class Region:
         """
         self.top_left = top_left
         self.bottom_right = bottom_right
-        self.width = bottom_right[0] - top_left[0]
-        self.height = bottom_right[1] - top_left[1]
         self.state = State.WAIT
         self.is_landlord = False
 
@@ -67,19 +65,3 @@ class Region:
         """
         # 调用 CardMatcher 识别牌
         return CardMatcher(self.image).detect_all_cards()
-
-
-# 示例
-if __name__ == "__main__":
-    # 初始化区域模块
-    region_manager = Region((260, 346), (700, 495))
-
-    # 加载测试图像
-    test_image = cv2.imread("test.png", 0)  # 灰度模式
-
-    # 截取区域
-    region_manager.capture_region(test_image)
-
-    # 判断区域状态
-    region_manager.update_region_state()
-    print(region_manager.state)
