@@ -69,12 +69,14 @@ class Game:
             return Landlord.RIGHT
 
     def determine_game_end(self, screenshot):
+        logger.info("正在寻找分数统计标记...")
         # 寻找分数统计标记
         max_val, max_loc = match_template_best_result(
             screenshot, cv2.imread("templates/Score.png", 0)
         )
 
         # 判断游戏结束
+        logger.info(f"分数统计标记匹配度为 {max_val}")
         return (
             max_val > 0.8 and (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
         )
