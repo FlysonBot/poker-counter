@@ -20,7 +20,7 @@ class CardMatcher:
         "K": cv2.imread("templates/K.png", 0),
         "JOKER": cv2.imread("templates/JOKER.png", 0),
     }  # 加载所有模板图像
-    THRESHOLD = 0.99  # 匹配相似度阈值
+    THRESHOLD = 0.95  # 匹配相似度阈值
 
     def __init__(self, target_image):
         self.target_image = target_image  # 直接使用传入的图像
