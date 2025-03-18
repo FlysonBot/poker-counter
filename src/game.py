@@ -85,15 +85,13 @@ def game_loop(interval, counter):
         # 初始化游戏对象
         game = Game()
         logger.info("游戏初始化完成")
+        counter.reset()  # 重置牌数量
 
         # 等待游戏开始
         while not game.determine_game_start(game.get_screenshot()):
             logger.debug("等待中...")
             sleep(1)
         logger.info("游戏开始")
-
-        # 初始化
-        counter.reset()  # 重置牌数量
 
         # 初始化地主
         landlord = game.determine_landlord(game.get_screenshot())
