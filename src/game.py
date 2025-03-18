@@ -28,15 +28,25 @@ class Game:
 
     def determine_game_start(self, screenshot):
         logger.info("正在寻找地主标记...")
+        marker_coordinates = [
+            [(20, 555), (85, 580)],
+            [(765, 900), (830, 930)],
+            [(1310, 555), (1380, 580)],
+        ]
 
-        # 寻找地主标记
-        max_val, _ = match_template_best_result(
-            screenshot, cv2.imread("templates/Landlord.png", 0)
-        )
+        for coordinates in marker_coordinates:
+            marker_screenshot = screenshot[
+                coordinates[0][1] : coordinates[1][1],
+                coordinates[0][0] : coordinates[1][0],
+            ]
+            max_val, _ = match_template_best_result(
+                marker_screenshot, cv2.imread("templates/Landlord.png", 0)
+            )
+            logger.debug(f"地主标记匹配度为 {max_val}")
+            if max_val >= 0.95:
+                return True
 
-        # 判断游戏开始
-        logger.debug(f"地主标记匹配度为 {max_val}")
-        return max_val >= 0.95
+        return False
 
     def determine_landlord(self, screenshot):
         # 寻找地主标记
