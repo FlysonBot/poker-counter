@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 from PIL import ImageGrab
 
+from color_percentage import calculate_color_percentage
 from image_match import match_template_best_result
 from logger import logger
 from region import Region, State
@@ -54,17 +55,11 @@ class Game:
             return Landlord.RIGHT
 
     def determine_game_end(self, screenshot):
-        logger.info("正在寻找分数统计标记...")
-        # 寻找分数统计标记
-        max_val, max_loc = match_template_best_result(
-            screenshot, cv2.imread("templates/Score.png", 0)
-        )
-
-        # 判断游戏结束
-        logger.debug(f"分数统计标记匹配度为 {max_val}")
-        return (
-            max_val > 0.8 and (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
-        )
+        logger.info("正在计算底牌区域白色占比...")
+        marker_screenshot = screenshot[120:140, 540:860]
+        percentage = calculate_color_percentage(marker_screenshot, (255, 255, 255))
+        logger.debug(f"底牌区域白色占比为 {percentage}")
+        return percentage > 0.25
 
     def get_screenshot(self):
         return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
