@@ -111,6 +111,7 @@ def game_loop(interval, counter):
 
         # 实时记录
         while not game.determine_game_end(screenshot):
+            screenshot = game.get_screenshot()
             current_region.capture_region(screenshot)
             current_region.update_region_state()
 
@@ -133,4 +134,3 @@ def game_loop(interval, counter):
 
             # 并更新截图及当前区域
             current_region = next(game.regions)
-            screenshot = game.get_screenshot()
