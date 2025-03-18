@@ -1,11 +1,11 @@
 from enum import Enum
-from venv import logger
 
 import cv2
 
 from card_matcher import CardMatcher
 from color_percentage import calculate_color_percentage
 from image_match import match_template_best_result
+from logger import logger
 
 
 class State(Enum):
@@ -51,17 +51,17 @@ class Region:
             ]
             > 0.9
         ):
-            logger.info("区域是PASS状态")
+            logger.debug("区域是PASS状态")
             self.state = State.PASS
             return
 
         # 判断区域是否是WAIT状态
         if calculate_color_percentage(self.image, (118, 40, 75)) > 0.9:
-            logger.info("区域是WAIT状态")
+            logger.debug("区域是WAIT状态")
             self.state = State.WAIT
             return
 
-        logger.info("区域是ACTIVE状态")
+        logger.debug("区域是ACTIVE状态")
         self.state = State.ACTIVE
 
     def recognize_cards(self):

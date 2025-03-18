@@ -1,32 +1,14 @@
-import logging
-import os
 from enum import Enum
 from itertools import cycle
 from time import sleep
-from venv import logger
 
 import cv2
 import numpy as np
 from PIL import ImageGrab
 
 from image_match import match_template_best_result
+from logger import logger
 from region import Region, State
-
-# Get the path to the desktop
-desktop_path = os.path.expanduser("~")
-
-# Define the log file name and create or clear it
-log_file = os.path.join(desktop_path, "poker-counter.log")
-if os.path.exists(log_file):
-    os.remove(log_file)
-
-# Set up logging configuration
-logging.basicConfig(
-    filename=log_file,
-    level=logging.DEBUG,  # Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format="%(asctime)s - %(levelname)s - %(message)s",  # Log message format
-)
-logger.info("日志文件创建成功")
 
 
 class Landlord(Enum):
@@ -51,16 +33,18 @@ class Game:
         )
 
         # 判断游戏开始
-        logger.info(f"地主标记匹配度为 {max_val}")
+        logger.debug(f"地主标记匹配度为 {max_val}")
         return max_val >= 0.95
 
     def determine_landlord(self, screenshot):
         # 寻找地主标记
+        logger.info("正在寻找地主标记...")
         _, max_loc = match_template_best_result(
             screenshot, cv2.imread("templates/Landlord.png", 0)
         )
 
         # 判断地主是谁
+        logger.debug(f"地主标记x坐标为 {max_loc[0]}")
         if max_loc[0] < 600:
             return Landlord.LEFT
         elif max_loc[0] < 900:
@@ -76,7 +60,7 @@ class Game:
         )
 
         # 判断游戏结束
-        logger.info(f"分数统计标记匹配度为 {max_val}")
+        logger.debug(f"分数统计标记匹配度为 {max_val}")
         return (
             max_val > 0.8 and (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
         )
@@ -95,16 +79,20 @@ def game_loop(interval, counter):
 
         # 等待游戏开始
         while not game.determine_game_start(game.get_screenshot()):
+            logger.debug("等待中...")
             sleep(1)
-            logger.info("等待中...")
         logger.info("游戏开始")
 
         # 初始化
-        counter.reset()
+        counter.reset()  # 重置牌数量
+
+        # 初始化地主
         landlord = game.determine_landlord(game.get_screenshot())
         logger.info(f"地主是{landlord.name}")
         for _ in range(landlord.value):
             next(game.regions)
+
+        # 获取截图
         screenshot = game.get_screenshot()
         current_region = next(game.regions)
         current_region.is_landlord = True  # 标记地主区域
@@ -117,13 +105,11 @@ def game_loop(interval, counter):
 
             # 如果区域处于等待状态，则等待
             if current_region.state == State.WAIT:
-                logger.info("等待")
                 sleep(interval)
                 continue
 
             # 如果区域有牌，则识别牌
             if current_region.state == State.ACTIVE:
-                logger.info("有牌")
                 cards = current_region.recognize_cards()
 
                 # 标记牌
