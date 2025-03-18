@@ -69,7 +69,7 @@ class GraphicInterface:
             label = tk.Label(
                 self.table_frame,
                 text=card,
-                font=("Arial", 12),
+                font=("Arial", 25),
                 width=3,
                 relief="solid",
                 borderwidth=1,
@@ -87,7 +87,7 @@ class GraphicInterface:
             label = tk.Label(
                 self.table_frame,
                 text=self.counter.get_card_count(card),
-                font=("Arial", 12),
+                font=("Arial", 25),
                 width=2,
                 relief="solid",
                 borderwidth=1,
