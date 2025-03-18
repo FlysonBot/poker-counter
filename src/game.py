@@ -22,6 +22,7 @@ class Game:
         self.left_region = Region((260, 346), (700, 446))
         self.middle_region = Region((425, 500), (970, 740))
         self.right_region = Region((700, 346), (1140, 446))
+        self.my_region = Region((350, 760), (1020, 820))
         self.regions = cycle([self.left_region, self.middle_region, self.right_region])
 
     def determine_game_start(self, screenshot):
@@ -68,8 +69,16 @@ class Game:
     def get_screenshot(self):
         return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
 
+    def get_my_cards(self):
+        return self.my_region.recognize_cards()
+
 
 def game_loop(interval, counter):
+    def mark_cards(cards):
+        for card, count in cards.items():
+            for _ in range(count):
+                counter.mark_card(card)
+
     logger.info("开始游戏")
 
     while True:
@@ -97,6 +106,11 @@ def game_loop(interval, counter):
         current_region = next(game.regions)
         current_region.is_landlord = True  # 标记地主区域
 
+        # 初始化自身
+        game.middle_region.is_me = True
+        game.my_region.capture_region(game.get_screenshot())
+        mark_cards(game.get_my_cards())
+
         # 实时记录
         while not game.determine_game_end(screenshot):
             screenshot = game.get_screenshot()
@@ -108,15 +122,9 @@ def game_loop(interval, counter):
                 sleep(interval)
                 continue
 
-            # 如果区域有牌，则识别牌
-            if current_region.state == State.ACTIVE:
-                cards = current_region.recognize_cards()
-
-                # 标记牌
-                for card, count in cards.items():
-                    for _ in range(count):
-                        counter.mark_card(card)
-                        logger.info(f"标记 {card}")
+            # 如果区域有牌，并且不是自己，则识别牌
+            if current_region.state == State.ACTIVE and not current_region.is_me:
+                mark_cards(current_region.recognize_cards())
 
             # 并更新截图及当前区域
             current_region = next(game.regions)

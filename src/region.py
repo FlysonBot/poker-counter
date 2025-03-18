@@ -29,6 +29,7 @@ class Region:
         self.bottom_right = bottom_right
         self.state = State.WAIT
         self.is_landlord = False
+        self.is_me = False
 
     def capture_region(self, image):
         """
