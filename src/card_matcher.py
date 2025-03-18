@@ -1,10 +1,9 @@
 import cv2
 
-from image_match import match_single_template
+from image_match import match_template_by_threshold
 
 
 class CardMatcher:
-    # 类常量：加载所有模板图像
     TEMPLATES = {
         "A": cv2.imread("templates/A.png", 0),
         "2": cv2.imread("templates/2.png", 0),
@@ -20,7 +19,7 @@ class CardMatcher:
         "Q": cv2.imread("templates/Q.png", 0),
         "K": cv2.imread("templates/K.png", 0),
         "JOKER": cv2.imread("templates/JOKER.png", 0),
-    }
+    }  # 加载所有模板图像
     THRESHOLD = 0.99  # 匹配相似度阈值
 
     def __init__(self, target_image):
@@ -29,31 +28,9 @@ class CardMatcher:
     def match_template_multiple(self, template_card):
         """匹配目标图像中的指定牌面"""
         template_image = CardMatcher.TEMPLATES[template_card]
-        matches = []
-
-        # 复制目标图像，避免修改原图
-        target_copy = self.target_image.copy()
-
-        while True:
-            # 进行模板匹配
-            max_val, max_loc = match_single_template(target_copy, template_image)
-
-            # 如果匹配相似度低于阈值，停止匹配
-            if max_val < CardMatcher.THRESHOLD:
-                break
-
-            # 记录匹配结果
-            matches.append((max_loc, max_val))
-
-            # 屏蔽已匹配的区域
-            h, w = template_image.shape
-            top_left = max_loc
-            bottom_right = (top_left[0] + w, top_left[1] + h)
-            cv2.rectangle(
-                target_copy, top_left, bottom_right, 0, -1
-            )  # 将匹配区域设置为 0
-
-        return matches
+        return match_template_by_threshold(
+            self.target_image, template_image, CardMatcher.THRESHOLD
+        )
 
     def detect_all_cards(self):
         """自动识别目标图像中的所有牌面"""

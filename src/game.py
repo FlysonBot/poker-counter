@@ -5,7 +5,7 @@ from time import sleep
 import cv2
 from PIL import ImageGrab
 
-from image_match import match_single_template
+from image_match import match_template_best_result
 from region import Region, State
 
 
@@ -24,7 +24,7 @@ class Game:
 
     def determine_game_start(self, screenshot):
         # 寻找地主标记
-        max_val, _ = match_single_template(
+        max_val, _ = match_template_best_result(
             screenshot, cv2.imread("templates/Landlord.png", 0)
         )
 
@@ -33,7 +33,7 @@ class Game:
 
     def determine_landlord(self, screenshot):
         # 寻找地主标记
-        _, max_loc = match_single_template(
+        _, max_loc = match_template_best_result(
             screenshot, cv2.imread("templates/Landlord.png", 0)
         )
 
@@ -47,7 +47,7 @@ class Game:
 
     def determine_game_end(self, screenshot):
         # 寻找分数统计标记
-        max_val, max_loc = match_single_template(
+        max_val, max_loc = match_template_best_result(
             screenshot, cv2.imread("templates/Score.png", 0)
         )
 

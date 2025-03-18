@@ -4,7 +4,7 @@ import cv2
 
 from card_matcher import CardMatcher
 from color_percentage import calculate_color_percentage
-from image_match import match_single_template
+from image_match import match_template_best_result
 
 
 class State(Enum):
@@ -45,7 +45,9 @@ class Region:
         """
         # 首先判断区域是否是PASS状态
         if (
-            match_single_template(self.image, cv2.imread("templates/PASS.png", 0))[0]
+            match_template_best_result(self.image, cv2.imread("templates/PASS.png", 0))[
+                0
+            ]
             > 0.9
         ):
             self.state = State.PASS
