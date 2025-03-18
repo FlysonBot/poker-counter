@@ -1,20 +1,14 @@
-from enum import Enum
 from itertools import cycle
 
 import cv2
 import numpy as np
 from PIL import ImageGrab
 
+from classes.landlord_enum import Landlord
 from classes.region import Region
 from functions.color_percentage import calculate_color_percentage
 from functions.image_match import match_template_best_result
 from logger import logger
-
-
-class Landlord(Enum):
-    LEFT = 0
-    MIDDLE = 1
-    RIGHT = 2
 
 
 class Game:

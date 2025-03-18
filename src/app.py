@@ -6,7 +6,7 @@ from logic import backend_logic
 
 
 class GraphicInterface:
-    def __init__(self, root):
+    def __init__(self, root) -> None:
         self.root = root
         self.root.title("记牌器")
 
@@ -27,7 +27,7 @@ class GraphicInterface:
         # 自动更新牌数量
         self.update_count(int(interval * 1000))
 
-    def setup_window(self):
+    def setup_window(self) -> None:
         # 初始化窗口拖动偏移变量
         self.offset_x = 0
         self.offset_y = 0
@@ -45,7 +45,8 @@ class GraphicInterface:
 
         # 调整窗口大小和位置（在程序界面中居中，并放到屏幕下方）
         self.root.update_idletasks()
-        width, height = self.root.winfo_width(), self.root.winfo_height()
+        width: int = self.root.winfo_width()
+        height: int = self.root.winfo_height()
         self.root.geometry(f"+{700 - width // 2}+{1050 - height}")
 
         # 绑定键盘事件
@@ -55,7 +56,7 @@ class GraphicInterface:
         self.table_frame.bind("<Button-1>", self.on_drag_start)
         self.table_frame.bind("<B1-Motion>", self.move_window)
 
-    def create_table(self):
+    def create_table(self) -> None:
         """创建横向表格界面"""
         self.table_frame = tk.Frame(
             self.root,
@@ -106,25 +107,25 @@ class GraphicInterface:
         # 调整窗口大小
         self.root.update_idletasks()
 
-    def move_window(self, event):
+    def move_window(self, event) -> None:
         """拖动窗口"""
-        x = self.root.winfo_pointerx() - self.offset_x
-        y = self.root.winfo_pointery() - self.offset_y
+        x: int = self.root.winfo_pointerx() - self.offset_x
+        y: int = self.root.winfo_pointery() - self.offset_y
         self.root.geometry(f"+{x}+{y}")
 
-    def on_drag_start(self, event):
+    def on_drag_start(self, event) -> None:
         """记录拖动起始位置"""
-        self.offset_x = event.x
-        self.offset_y = event.y
+        self.offset_x: int = event.x
+        self.offset_y: int = event.y
 
-    def update_count(self, interval):
+    def update_count(self, interval) -> None:
         """更新牌数量显示"""
         if self.current_count != self.counter.total_cards:
-            self.current_count = self.counter.total_cards
+            self.current_count: int = self.counter.total_cards
 
             # 更新剩余牌数量显示
             for card in self.counter.cards:
-                count = self.counter.get_card_count(card)
+                count: int = self.counter.get_card_count(card)
                 self.count_labels[card].config(text=str(count))
 
         self.root.after(interval, self.update_count, interval)

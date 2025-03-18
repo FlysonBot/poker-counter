@@ -1,12 +1,13 @@
 from time import sleep
+from typing import NoReturn
 
 from classes.game import Game
-from classes.region import State
+from classes.region import Region, State
 from logger import logger
 
 
-def backend_logic(interval, counter):
-    def mark_cards(cards):
+def backend_logic(interval, counter) -> NoReturn:
+    def mark_cards(cards) -> None:
         for card, count in cards.items():
             for _ in range(count):
                 counter.mark_card(card)
@@ -34,7 +35,7 @@ def backend_logic(interval, counter):
 
         # 获取截图
         screenshot = game.get_screenshot()
-        current_region = next(game.regions)
+        current_region: Region = next(game.regions)
         current_region.is_landlord = True  # 标记地主区域
 
         # 初始化自身

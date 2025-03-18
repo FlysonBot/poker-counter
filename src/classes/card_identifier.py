@@ -22,7 +22,7 @@ class CardsIdentifier:
     }  # 加载所有模板图像
     THRESHOLD = 0.95  # 匹配相似度阈值
 
-    def __init__(self, target_image):
+    def __init__(self, target_image) -> None:
         self.target_image = target_image  # 直接使用传入的图像
 
     def match_template_multiple(self, template_card):

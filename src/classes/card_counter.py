@@ -1,11 +1,11 @@
 class CardCounter:
-    def __init__(self):
+    def __init__(self) -> None:
         # 初始化牌的数量
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         """重置所有牌的数量"""
-        self.cards = {
+        self.cards: dict[str, int] = {
             "3": 4,
             "4": 4,
             "5": 4,
@@ -23,11 +23,11 @@ class CardCounter:
         }
         self.total_cards = 54
 
-    def get_card_count(self, card):
+    def get_card_count(self, card) -> int:
         """获取指定牌的剩余数量"""
         return self.cards[card]
 
-    def mark_card(self, card):
+    def mark_card(self, card) -> None:
         """减少指定牌的数量"""
         if card == "JOKER":
             card = "王"
