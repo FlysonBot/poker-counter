@@ -41,8 +41,10 @@ class GraphicInterface:
         # 创建表格界面
         self.create_table()
 
-        # 调整窗口大小和位置
-        self.center_window_at_x(700)
+        # 调整窗口大小和位置（在程序界面中居中，并放到屏幕下方）
+        self.root.update_idletasks()
+        width, height = self.root.winfo_width(), self.root.winfo_height()
+        self.root.geometry(f"+{700 - width // 2}+{1050 - height}")
 
         # 绑定键盘事件
         self.root.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按 Q 键退出
@@ -107,12 +109,6 @@ class GraphicInterface:
         x = self.root.winfo_pointerx() - self.offset_x
         y = self.root.winfo_pointery() - self.offset_y
         self.root.geometry(f"+{x}+{y}")
-
-    def center_window_at_x(self, x):
-        """将窗口居中到指定位置"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        self.root.geometry(f"+{x - width // 2}+0")
 
     def on_drag_start(self, event):
         """记录拖动起始位置"""
