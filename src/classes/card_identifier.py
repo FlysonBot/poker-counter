@@ -1,9 +1,9 @@
 import cv2
 
-from image_match import match_template_by_threshold
+from functions.image_match import match_template_by_threshold
 
 
-class CardMatcher:
+class CardsIdentifier:
     TEMPLATES = {
         "A": cv2.imread("templates/A.png", 0),
         "2": cv2.imread("templates/2.png", 0),
@@ -27,16 +27,16 @@ class CardMatcher:
 
     def match_template_multiple(self, template_card):
         """匹配目标图像中的指定牌面"""
-        template_image = CardMatcher.TEMPLATES[template_card]
+        template_image = CardsIdentifier.TEMPLATES[template_card]
         return match_template_by_threshold(
-            self.target_image, template_image, CardMatcher.THRESHOLD
+            self.target_image, template_image, CardsIdentifier.THRESHOLD
         )
 
     def detect_all_cards(self):
         """自动识别目标图像中的所有牌面"""
         detected_cards = {}
 
-        for card_name in CardMatcher.TEMPLATES:
+        for card_name in CardsIdentifier.TEMPLATES:
             matches = self.match_template_multiple(card_name)
             if matches:
                 detected_cards[card_name] = len(matches)  # 只记录匹配数量

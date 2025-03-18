@@ -2,9 +2,9 @@ from enum import Enum
 
 import cv2
 
-from card_matcher import CardMatcher
-from color_percentage import calculate_color_percentage
-from image_match import match_template_best_result
+from classes.card_identifier import CardsIdentifier
+from functions.color_percentage import calculate_color_percentage
+from functions.image_match import match_template_best_result
 from logger import logger
 
 
@@ -71,4 +71,4 @@ class Region:
         :return: 识别结果（字典，键为牌面名称，值为数量）
         """
         # 调用 CardMatcher 识别牌
-        return CardMatcher(self.image).detect_all_cards()
+        return CardsIdentifier(self.image).detect_all_cards()

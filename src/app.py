@@ -1,8 +1,8 @@
 import tkinter as tk
 from threading import Thread
 
-from card_counter import CardCounter
-from game import game_loop
+from classes.card_counter import CardCounter
+from logic import backend_logic
 
 
 class GraphicInterface:
@@ -16,7 +16,9 @@ class GraphicInterface:
         self.current_count = self.counter.total_cards
 
         # 第二线程循环允许后端代码
-        thread = Thread(target=game_loop, args=(interval, self.counter), daemon=True)
+        thread = Thread(
+            target=backend_logic, args=(interval, self.counter), daemon=True
+        )
         thread.start()
 
         # 创建窗口
