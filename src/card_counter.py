@@ -29,7 +29,8 @@ class CardCounter:
 
     def mark_card(self, card):
         """减少指定牌的数量"""
+        if card == "JOKER":
+            card = "王"
         if self.cards[card] > 0:
             self.cards[card] -= 1
             self.total_cards -= 1
-

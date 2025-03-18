@@ -19,9 +19,9 @@ class Landlord(Enum):
 
 class Game:
     def __init__(self):
-        self.left_region = Region((260, 346), (700, 400))
-        self.middle_region = Region((425, 500), (970, 560))
-        self.right_region = Region((700, 346), (1140, 400))
+        self.left_region = Region((260, 346), (700, 446))
+        self.middle_region = Region((425, 500), (970, 600))
+        self.right_region = Region((700, 346), (1140, 446))
         self.regions = cycle([self.left_region, self.middle_region, self.right_region])
 
     def determine_game_start(self, screenshot):
