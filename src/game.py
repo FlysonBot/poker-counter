@@ -78,6 +78,7 @@ def game_loop(interval, counter):
         for card, count in cards.items():
             for _ in range(count):
                 counter.mark_card(card)
+                logger.info(f"已标记 {card}")
 
     logger.info("开始游戏")
 
