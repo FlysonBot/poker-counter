@@ -6,6 +6,7 @@ from time import sleep
 from venv import logger
 
 import cv2
+import numpy as np
 from PIL import ImageGrab
 
 from image_match import match_template_best_result
@@ -42,13 +43,16 @@ class Game:
         self.regions = cycle([self.left_region, self.middle_region, self.right_region])
 
     def determine_game_start(self, screenshot):
+        logger.info("正在寻找地主标记...")
+
         # 寻找地主标记
         max_val, _ = match_template_best_result(
             screenshot, cv2.imread("templates/Landlord.png", 0)
         )
 
         # 判断游戏开始
-        return max_val >= 0.99
+        logger.info(f"地主标记匹配度为 {max_val}")
+        return max_val >= 0.95
 
     def determine_landlord(self, screenshot):
         # 寻找地主标记
@@ -75,26 +79,31 @@ class Game:
             max_val > 0.8 and (550 <= max_loc[0] <= 850) and (330 <= max_loc[1] <= 550)
         )
 
+    def get_screenshot(self):
+        return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+
 
 def game_loop(interval, counter):
     logger.info("开始游戏")
+
     while True:
         # 初始化游戏对象
         game = Game()
         logger.info("游戏初始化完成")
 
         # 等待游戏开始
-        while not game.determine_game_start(ImageGrab.grab()):
+        while not game.determine_game_start(game.get_screenshot()):
             sleep(1)
+            logger.info("等待中...")
         logger.info("游戏开始")
 
         # 初始化
         counter.reset()
-        landlord = game.determine_landlord(ImageGrab.grab())
+        landlord = game.determine_landlord(game.get_screenshot())
         logger.info(f"地主是{landlord.name}")
         for _ in range(landlord.value):
             next(game.regions)
-        screenshot = ImageGrab.grab()
+        screenshot = game.get_screenshot()
         current_region = next(game.regions)
         current_region.is_landlord = True  # 标记地主区域
 
@@ -122,4 +131,4 @@ def game_loop(interval, counter):
 
             # 并更新截图及当前区域
             current_region = next(game.regions)
-            screenshot = ImageGrab.grab()
+            screenshot = game.get_screenshot()
