@@ -7,8 +7,8 @@ from PIL import ImageGrab
 from classes.landlord_enum import Landlord
 from classes.region import Region
 from config import REGIONS, THRESHOLDS, DIVIDER_LEFT, DIVIDER_RIGHT
-from functions.color_percentage import calculate_color_percentage
-from functions.image_match import match_template_best_result
+from image_processing.color_percentage import color_percentage
+from image_processing.template_match import best_template_match
 from logger import logger
 
 
@@ -34,7 +34,7 @@ class Game:
                 coordinates[0][0] : coordinates[1][0],
             ]  # 第一个slicing返回第一/二个坐标，第二个slicing返回x/y坐标
             
-            max_val, _ = match_template_best_result(
+            max_val, _ = best_template_match(
                 marker_screenshot, cv2.imread("templates/Landlord.png", 0)
             )
             logger.debug(f"地主标记匹配度为 {max_val}")
@@ -48,7 +48,7 @@ class Game:
         logger.info("正在寻找地主标记...")
         
         # 寻找地主标记
-        _, max_loc = match_template_best_result(
+        _, max_loc = best_template_match(
             screenshot, cv2.imread("templates/Landlord.png", 0)
         )
         logger.debug(f"地主标记x坐标为 {max_loc[0]}")
@@ -69,7 +69,7 @@ class Game:
         marker_screenshot = screenshot[coord[0][1]:coord[1][1], coord[0][0]:coord[1][0]]
         
         # 计算白色在图片中的占比
-        percentage = calculate_color_percentage(marker_screenshot, (255, 255, 255))
+        percentage = color_percentage(marker_screenshot, (255, 255, 255))
         logger.debug(f"底牌区域白色占比为 {percentage}")
 
         return percentage > THRESHOLDS["end-game"]
