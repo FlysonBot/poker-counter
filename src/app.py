@@ -1,7 +1,7 @@
 import tkinter as tk
 from threading import Thread
 
-from classes.card_counter import CardCounter
+from game_logic.card_counter import CardCounter
 from config import SCREENSHOT_INTERVAL, GUI_UPDATE_INTERVAL, GUI_LOCATION, FONT_SIZE
 from logic import backend_logic
 
