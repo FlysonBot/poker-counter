@@ -3,6 +3,7 @@ from enum import Enum
 import cv2
 
 from classes.card_identifier import CardsIdentifier
+from config import THRESHOLD
 from functions.color_percentage import calculate_color_percentage
 from functions.image_match import match_template_best_result
 from logger import logger
@@ -50,14 +51,14 @@ class Region:
             match_template_best_result(self.image, cv2.imread("templates/PASS.png", 0))[
                 0
             ]
-            > 0.9
+            > THRESHOLD["pass"]
         ):
             logger.debug("区域是PASS状态")
             self.state = State.PASS
             return
 
         # 判断区域是否是WAIT状态
-        if calculate_color_percentage(self.image, (118, 40, 75)) > 0.9:
+        if calculate_color_percentage(self.image, (118, 40, 75)) > THRESHOLD["wait"]:
             logger.debug("区域是WAIT状态")
             self.state = State.WAIT
             return

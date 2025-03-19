@@ -1,7 +1,9 @@
 import cv2
 
 from functions.image_match import match_template_by_threshold
+from config import THRESHOLD
 
+THRESHOLD = THRESHOLD["card"]
 
 class CardsIdentifier:
     TEMPLATES = {
@@ -20,7 +22,6 @@ class CardsIdentifier:
         "K": cv2.imread("templates/K.png", 0),
         "JOKER": cv2.imread("templates/JOKER.png", 0),
     }  # 加载所有模板图像
-    THRESHOLD = 0.95  # 匹配相似度阈值
 
     def __init__(self, target_image) -> None:
         self.target_image = target_image  # 直接使用传入的图像
@@ -29,7 +30,7 @@ class CardsIdentifier:
         """匹配目标图像中的指定牌面"""
         template_image = CardsIdentifier.TEMPLATES[template_card]
         return match_template_by_threshold(
-            self.target_image, template_image, CardsIdentifier.THRESHOLD
+            self.target_image, template_image, THRESHOLD
         )
 
     def detect_all_cards(self):

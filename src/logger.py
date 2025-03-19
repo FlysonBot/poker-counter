@@ -1,17 +1,16 @@
 import logging
 import os
 
-# 获取桌面路径
-desktop_path: str = os.path.expanduser("~")
+from config import LOG_PATH
 
-# 设置日志文件名并清空已有日志文件
-log_file: str = os.path.join(desktop_path, "poker-counter.log")
-if os.path.exists(log_file):
-    os.remove(log_file)
+
+# 清空已有日志文件
+if os.path.exists(LOG_PATH):
+    os.remove(LOG_PATH)
 
 # 设置日志配置
 logging.basicConfig(
-    filename=log_file,
+    filename=LOG_PATH,
     level=logging.INFO,  # Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(levelname)s - %(message)s",  # Log message format
 )

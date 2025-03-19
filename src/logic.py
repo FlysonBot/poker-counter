@@ -3,10 +3,11 @@ from typing import NoReturn
 
 from classes.game import Game
 from classes.region import Region, State
+from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
 from logger import logger
 
 
-def backend_logic(interval, counter) -> NoReturn:
+def backend_logic(counter) -> NoReturn:
     def mark_cards(cards) -> None:
         for card, count in cards.items():
             for _ in range(count):
@@ -24,7 +25,7 @@ def backend_logic(interval, counter) -> NoReturn:
         # 等待游戏开始
         while not game.determine_game_start(game.get_screenshot()):
             logger.debug("等待中...")
-            sleep(1)
+            sleep(GAME_START_INTERVAL)
         logger.info("游戏开始")
 
         # 初始化地主
@@ -51,7 +52,7 @@ def backend_logic(interval, counter) -> NoReturn:
 
             # 如果区域处于等待状态，则等待
             if current_region.state == State.WAIT:
-                sleep(interval)
+                sleep(SCREENSHOT_INTERVAL)
                 continue
 
             # 如果区域有牌，并且不是自己，则识别牌

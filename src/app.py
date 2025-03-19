@@ -2,7 +2,10 @@ import tkinter as tk
 from threading import Thread
 
 from classes.card_counter import CardCounter
+from config import SCREENSHOT_INTERVAL, GUI_UPDATE_INTERVAL, GUI_LOCATION, FONT_SIZE
 from logic import backend_logic
+
+GUI_UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为整数毫秒
 
 
 class GraphicInterface:
@@ -11,13 +14,12 @@ class GraphicInterface:
         self.root.title("记牌器")
 
         # 初始化应用逻辑
-        interval = 0.2
         self.counter = CardCounter()
         self.current_count = self.counter.total_cards
 
         # 第二线程循环允许后端代码
         thread = Thread(
-            target=backend_logic, args=(interval, self.counter), daemon=True
+            target=backend_logic, args=(self.counter), daemon=True
         )
         thread.start()
 
@@ -25,12 +27,12 @@ class GraphicInterface:
         self.setup_window()
 
         # 自动更新牌数量
-        self.update_count(int(interval * 1000))
+        self.update_count()
 
     def setup_window(self) -> None:
         # 初始化窗口拖动偏移变量
-        self.offset_x = 0
-        self.offset_y = 0
+        self.offset_x = GUI_LOCATION.get("OFFSET_X", 0)
+        self.offset_y = GUI_LOCATION.get("OFFSET_Y", 0)
 
         # 设置窗口完全透明
         self.root.configure(bg="white")  # 窗口背景设置为白色
@@ -44,10 +46,12 @@ class GraphicInterface:
         self.create_table()
 
         # 调整窗口大小和位置（在程序界面中居中，并放到屏幕下方）
-        self.root.update_idletasks()
-        width: int = self.root.winfo_width()
-        height: int = self.root.winfo_height()
-        self.root.geometry(f"+{700 - width // 2}+{1050 - height}")
+        self.root.update_idletasks()  # 动态调整窗口大小以匹配内容大小
+        x_offset: int = self.root.winfo_width() // 2  # 获取窗口宽度的一半
+        y_offset: int = self.root.winfo_height() // 2  # 获取窗口高度的一半
+        x_offset += GUI_LOCATION.get("CENTER_X", -x_offset)  # 加上置中坐标或设为0
+        y_offset += GUI_LOCATION.get("CENTER_Y", -y_offset)  # 加上置中坐标或设为0
+        self.root.geometry(f"+{x_offset}+{y_offset}")
 
         # 绑定键盘事件
         self.root.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按 Q 键退出
@@ -74,8 +78,8 @@ class GraphicInterface:
             label = tk.Label(
                 self.table_frame,
                 text=card,
-                font=("Arial", 25),
-                width=3,
+                font=("Arial", FONT_SIZE),
+                width=2,
                 relief="solid",
                 borderwidth=1,
                 bg="lightblue",
@@ -92,7 +96,7 @@ class GraphicInterface:
             label = tk.Label(
                 self.table_frame,
                 text=self.counter.get_card_count(card),
-                font=("Arial", 25),
+                font=("Arial", FONT_SIZE),
                 width=2,
                 relief="solid",
                 borderwidth=1,
@@ -104,7 +108,7 @@ class GraphicInterface:
             label.grid(row=1, column=i, padx=0, pady=0, sticky="nsew")
             self.count_labels[card] = label
 
-        # 调整窗口大小
+        # 动态调整窗口大小
         self.root.update_idletasks()
 
     def move_window(self, event) -> None:
@@ -118,7 +122,7 @@ class GraphicInterface:
         self.offset_x: int = event.x
         self.offset_y: int = event.y
 
-    def update_count(self, interval) -> None:
+    def update_count(self) -> None:
         """更新牌数量显示"""
         if self.current_count != self.counter.total_cards:
             self.current_count: int = self.counter.total_cards
@@ -128,4 +132,4 @@ class GraphicInterface:
                 count: int = self.counter.get_card_count(card)
                 self.count_labels[card].config(text=str(count))
 
-        self.root.after(interval, self.update_count, interval)
+        self.root.after(GUI_UPDATE_INTERVAL, self.update_count)
