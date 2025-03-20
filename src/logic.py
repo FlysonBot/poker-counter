@@ -1,5 +1,6 @@
 from time import sleep
 from typing import NoReturn
+from itertools import cycle
 
 from regions.region_manager import RegionManager
 from classes.region import Region, State
@@ -32,12 +33,17 @@ def backend_logic(counter) -> NoReturn:
         # 初始化地主
         landlord = region_manger.determine_landlord_location(region_manger.get_screenshot())
         logger.info(f"地主是{landlord.name}")
+        region_cycle = cycle([
+            region_manger.card_regions["left"],
+            region_manger.card_regions["middle"],
+            region_manger.card_regions["right"],
+        ])
         for _ in range(landlord.value):
-            next(region_manger.regions)
+            next(region_cycle)
 
         # 获取截图
         screenshot = region_manger.get_screenshot()
-        current_region: Region = next(region_manger.regions)
+        current_region: Region = next(region_cycle)
         current_region.is_landlord = True  # 标记地主区域
 
         # 初始化自身
@@ -61,4 +67,4 @@ def backend_logic(counter) -> NoReturn:
                 mark_cards(current_region.recognize_cards())
 
             # 并更新截图及当前区域
-            current_region = next(region_manger.regions)
+            current_region = next(region_cycle)
