@@ -14,12 +14,12 @@ class CardCounter:
 
     def __init__(self):
         self.reset()
-        logger.info("新的记牌器已初始化")
+        logger.info("记牌器初始化成功")
 
     def reset(self) -> None:
         """重置计数器"""
         self.counts = self.INITIAL_COUNTS.copy()
-        logger.debug("Counter reset to initial state")
+        logger.debug("记牌器状态已还原")
 
     def mark(self, card: str) -> None:
         """标记已出的牌"""
