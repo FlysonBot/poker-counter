@@ -45,7 +45,16 @@ class GameState:
         self.game_end_marker = Region(*REGIONS["3_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
+        self._reset_flag = False  # 通过窗口手动重置的标记
+
         logger.success("所有区域初始化完毕")
+    
+    def manual_reset(self) -> None:
+        """
+        手动重置记牌器。
+        """
+        
+        self._reset_flag = True
 
     def get_screenshot(self) -> GrayscaleImage:
         """
@@ -79,7 +88,7 @@ class GameState:
         logger.trace("正在识别当前玩家的手牌...")
         cards = self.my_cards_region.recognize_cards()
         logger.info(f"当前玩家的手牌为：{cards}")
-        
+
         return cards
 
     def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[MatchResult]:
@@ -150,6 +159,10 @@ class GameState:
         :param screenshot: 屏幕截图
         :return: 游戏是否结束
         """
+
+        if self._reset_flag:
+            self._reset_flag = False
+            return True
 
         logger.trace("正在计算底牌区域白色占比...")
 

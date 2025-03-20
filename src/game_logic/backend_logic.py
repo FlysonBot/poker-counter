@@ -15,7 +15,7 @@ from .card_counter import CardCounter
 from .game_state import GameState
 
 
-def backend_logic(counter: CardCounter) -> NoReturn:
+def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
     """
     后端逻辑主函数，负责监控游戏状态并更新记牌器。
 
@@ -36,10 +36,8 @@ def backend_logic(counter: CardCounter) -> NoReturn:
     logger.trace("开始后端循环代码")
 
     while True:
-        # 初始化游戏对象
-        gs = GameState()
-        logger.success("游戏初始化完成")
-        counter.reset()  # 重置牌数量
+        # 初始化游戏状态
+        counter.reset()
 
         # 等待游戏开始
         while not gs.is_game_started(gs.get_screenshot()):

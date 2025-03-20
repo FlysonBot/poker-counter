@@ -7,7 +7,7 @@ from tkinter import ttk
 from typing import Any, Dict
 
 from config import FONT_SIZE, GUI_LOCATION
-from game_logic import CardCounter
+from game_logic import CardCounter, GameState
 from logger import logger
 
 
@@ -16,7 +16,7 @@ class MainWindow(tk.Toplevel):
     主界面组件类，显示记牌器的实时信息。
     """
 
-    def __init__(self, master: tk.Tk, counter: CardCounter) -> None:
+    def __init__(self, master: tk.Tk, counter: CardCounter, gs: GameState) -> None:
         """
         初始化主界面组件。
 
@@ -29,6 +29,7 @@ class MainWindow(tk.Toplevel):
         self._setup_window()
         self._setup_binding()
         self._create_table()
+        self.gs = gs
         logger.success("主界面初始化完毕")
 
     def _setup_window(self) -> None:
@@ -78,7 +79,8 @@ class MainWindow(tk.Toplevel):
         self.bind("<B1-Motion>", self._on_drag_move)
 
         # 绑定键盘热键
-        self.bind("<KeyPress-q>", lambda event: self.root.destroy())
+        self.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按下q键退出程序
+        self.bind("<KeyPress-r>", lambda event: self.gs.manual_reset())  # 按下r键手动重置记牌器
 
         logger.success("窗口键盘和鼠标事件绑定成功")
 
@@ -143,7 +145,7 @@ class MainWindow(tk.Toplevel):
         x = self.winfo_x() + (event.x - self._drag_start_x)
         y = self.winfo_y() + (event.y - self._drag_start_y)
         self.geometry(f"+{x}+{y}")
-
+    
     def update_display(self) -> None:
         """
         更新窗口的显示内容。

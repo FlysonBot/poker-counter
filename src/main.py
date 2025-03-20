@@ -6,8 +6,7 @@ import tkinter as tk
 from threading import Thread
 
 from config import GUI_UPDATE_INTERVAL
-from game_logic.backend_logic import backend_logic
-from game_logic.card_counter import CardCounter
+from game_logic import CardCounter, GameState, backend_logic
 from logger import logger
 from ui import MainWindow, backend_error_handler
 
@@ -23,16 +22,17 @@ if __name__ == "__main__":
     # 绑定后端错误处理函数
     logger.add(lambda message: backend_error_handler(root, message), level="ERROR")
 
-    # 初始化记牌器
+    # 初始化记牌器和游戏状态
     counter = CardCounter()
+    gs = GameState()
 
     # 第二线程运行后端循环代码
-    thread = Thread(target=backend_logic, args=(counter,), daemon=True)
+    thread = Thread(target=backend_logic, args=(counter, gs), daemon=True)
     thread.start()
     logger.success("后端代码成功在第二线程运行")
 
     # 创建窗口
-    window = MainWindow(root, counter)
+    window = MainWindow(root, counter, gs)
 
     # 更新窗口内容
     def update_window() -> None:
