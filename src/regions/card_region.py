@@ -1,4 +1,9 @@
-from region.region import Region
+from config import THRESHOLDS
+from image_processing import MARKS, color_percentage, identify_cards, template_match
+from logger import logger
+from .region import Region
+from .region_state import RegionState
+
 
 class CardRegion(Region):
     def update_state(self) -> None:
@@ -7,14 +12,18 @@ class CardRegion(Region):
         """
 
         # 先检查是否为PASS状态
-        match_val, _ = cv2.matchTemplate(self.region_screenshot, MARKS["PASS"])
-        if match_val > THRESHOLDS["pass"]:
+        confidences, _ = template_match(
+            self.region_screenshot, MARKS["PASS"], THRESHOLDS["pass"]
+        )
+        if confidences:
             self.state = RegionState.PASS
             logger.debug("更新区域状态为: PASS")
             return
 
         # 检查是否为WAIT状态
-        wait_color_percentage = self._calculate_color_percentage(self.region_screenshot, COLORS["wait"])
+        wait_color_percentage: float = color_percentage(
+            self.region_screenshot, (118, 40, 75)
+        )
         if wait_color_percentage > THRESHOLDS["wait"]:
             self.state = RegionState.WAIT
             logger.debug("更新区域状态为: WAIT")
@@ -24,7 +33,7 @@ class CardRegion(Region):
         self.state = RegionState.ACTIVE
         logger.debug("更新区域状态为: ACTIVE")
 
-    def recognize_cards(self) -> Dict[str, int]:
+    def recognize_cards(self) -> dict[str, int]:
         """
         识别区域内的牌
         """
@@ -32,6 +41,5 @@ class CardRegion(Region):
             logger.warning("尝试在非活跃区域（出了牌的区域）进行识牌")
             return {}
 
-        region_image = self.capture(self.region_screenshot)
-        return identify_cards(region_image, THRESHOLDS["card"])
-
+        self.capture(self.region_screenshot)
+        return identify_cards(self.region_screenshot, THRESHOLDS["card"])

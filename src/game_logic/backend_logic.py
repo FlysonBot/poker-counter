@@ -2,10 +2,10 @@ from time import sleep
 from typing import NoReturn
 from itertools import cycle
 
-from classes.region import Region, State
+from regions import Region, RegionState
 from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
 from logger import logger
-from game_logic.gs import GameState
+from .game_state import GameState
 
 
 def backend_logic(counter) -> NoReturn:
@@ -32,11 +32,13 @@ def backend_logic(counter) -> NoReturn:
         # 初始化地主
         landlord = gs.determine_landlord_location(gs.get_screenshot())
         logger.info(f"地主是{landlord.name}")
-        region_cycle = cycle([
-            gs.card_regions["left"],
-            gs.card_regions["middle"],
-            gs.card_regions["right"],
-        ])
+        region_cycle = cycle(
+            [
+                gs.card_regions["left"],
+                gs.card_regions["middle"],
+                gs.card_regions["right"],
+            ]
+        )
         for _ in range(landlord.value):
             next(region_cycle)
 
@@ -54,15 +56,15 @@ def backend_logic(counter) -> NoReturn:
         while not gs.is_game_ended(screenshot):
             screenshot = gs.get_screenshot()  # 更新截图
             current_region.capture(screenshot)  # 更新当前出牌区域截图
-            current_region.update_region_state()  # 更新当前出牌区域状态
+            current_region.update_state()  # 更新当前出牌区域状态
 
             # 如果区域仍处于等待状态，则等待
-            if current_region.state == State.WAIT:
+            if current_region.state == RegionState.WAIT:
                 sleep(SCREENSHOT_INTERVAL)
                 continue
 
             # 如果区域有牌，并且不是自己，则识别并标记牌
-            if current_region.state == State.ACTIVE and not current_region.is_me:
+            if current_region.state == RegionState.ACTIVE and not current_region.is_me:
                 mark_cards(current_region.recognize_cards())
 
             # 并更新截图及当前区域

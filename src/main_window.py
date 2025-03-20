@@ -1,19 +1,24 @@
 """
 悬浮窗组件，用于显示记牌器的实时信息
 """
+
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict
 
 from game_logic import CardCounter
 from logger import logger
+from config import GUI_LOCATION, FONT_SIZE
+
 
 class MainWindow(tk.Toplevel):
     """
     主界面组件，显示记牌器的实时信息
     """
+
     def __init__(self, master, counter: CardCounter):
         super().__init__(master)
+        self.root = master
         self.counter = counter
         self._setup_window()
         self._setup_binding()
@@ -39,15 +44,21 @@ class MainWindow(tk.Toplevel):
         center_y_offset = GUI_LOCATION.get("CENTER_X", None)  # 中心Y偏移量
         window_width = self.root.winfo_width()  # 窗口宽度
         window_height = self.root.winfo_height()  # 窗口高度
-        
+
         # 计算并应用窗口偏移量
         x_offset, y_offset = 0, 0  # 设置初始偏移量为0
-        if initial_x_offset: x_offset += initial_x_offset
-        elif center_x_offset: x_offset += center_x_offset - window_width // 2
-        if initial_y_offset: y_offset += initial_y_offset
-        elif center_y_offset: y_offset += center_y_offset - window_height // 2
+
+        if initial_x_offset:
+            x_offset += initial_x_offset
+        elif center_x_offset:
+            x_offset += center_x_offset - window_width // 2
+
+        if initial_y_offset:
+            y_offset += initial_y_offset
+        elif center_y_offset:
+            y_offset += center_y_offset - window_height // 2
+
         self.root.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
-        
         logger.info(f"窗口偏移量为：{x_offset}，{y_offset}")
 
     def _setup_binding(self) -> None:
@@ -69,9 +80,9 @@ class MainWindow(tk.Toplevel):
         self.table_frame.pack(padx=0, pady=0)
 
         # 牌名标签
-        self.card_labels: Dict[str, ttk.Label] = {}
+        self.card_labels: Dict[str, tk.Label] = {}
         for idx, card in enumerate(self.counter.INITIAL_COUNTS.keys()):
-            label = ttk.Label(
+            label = tk.Label(
                 self.table_frame,
                 text=card,
                 anchor="center",
@@ -85,9 +96,9 @@ class MainWindow(tk.Toplevel):
             self.card_labels[card] = label
 
         # 数量标签
-        self.count_labels: Dict[str, ttk.Label] = {}
+        self.count_labels: Dict[str, tk.Label] = {}
         for idx, card in enumerate(self.counter.INITIAL_COUNTS.keys()):
-            label = ttk.Label(
+            label = tk.Label(
                 self.table_frame,
                 text=str(self.counter.get_count(card)),
                 anchor="center",
@@ -121,5 +132,4 @@ class MainWindow(tk.Toplevel):
         """
         for card, label in self.count_labels.items():
             label.config(text=str(self.counter.get_count(card)))
-        self.total_label.config(text=f"Total: {self.counter.total}")
         logger.debug("Overlay display updated")

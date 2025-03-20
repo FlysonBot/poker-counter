@@ -1,6 +1,7 @@
 """
 应用程序配置
 """
+
 import logging
 from pathlib import Path
 from typing import Dict, Tuple
@@ -14,7 +15,7 @@ REGIONS: Dict[str, Tuple[Tuple[int, int], Tuple[int, int]]] = {
     "remaining_cards_left": ((20, 555), (85, 580)),  # 左边剩余牌数显示区域
     "remaining_cards_middle": ((765, 900), (830, 930)),  # 中间剩余牌数显示区域
     "remaining_cards_right": ((1310, 555), (1380, 580)),  # 右边剩余牌数显示区域
-    "3_displayed_cards": ((540,120), (860,140)),  # 游戏结束时上方三张底牌的显示区域
+    "3_displayed_cards": ((540, 120), (860, 140)),  # 游戏结束时上方三张底牌的显示区域
 }
 
 # 模板匹配阈值
@@ -33,10 +34,10 @@ GAME_START_INTERVAL = 1  # 等待下一次判断游戏开始时的间隔
 
 # 记牌器窗口默认显示位置坐标(OFFSET和CENTER二选一)
 GUI_LOCATION = {
-    #"OFFSET_X": 0,  # 左上角起始X坐标
+    # "OFFSET_X": 0,  # 左上角起始X坐标
     "OFFSET_Y": 0,  # 左上角起始Y坐标
     "CENTER_X": 700,  # 中心X坐标
-    #"CENTER_Y": 0,  # 中心Y坐标
+    # "CENTER_Y": 0,  # 中心Y坐标
 }
 
 # 其他参数
