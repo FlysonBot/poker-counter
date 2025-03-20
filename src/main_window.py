@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict
 
-from game_logic.card_counter import CardCounter
+from game_logic import CardCounter
 from logger import logger
 
 class MainWindow(tk.Toplevel):
