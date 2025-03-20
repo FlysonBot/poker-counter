@@ -2,8 +2,6 @@
 应用程序配置模块，包含游戏区域坐标、模板匹配阈值、日志路径等配置。
 """
 
-import logging
-from pathlib import Path
 from typing import Dict, Tuple
 
 # 区域坐标配置 (单位: 像素)
@@ -20,11 +18,11 @@ REGIONS: Dict[str, Tuple[Tuple[int, int], Tuple[int, int]]] = {
 
 # 模板匹配阈值
 THRESHOLDS = {
-    "pass": 0.9,
-    "wait": 0.9,
-    "landlord": 0.95,
-    "card": 0.95,
-    "end-game": 0.25,
+    "pass": 0.9,  # 不出牌标记 匹配置信度阈值
+    "wait": 0.9,  # 等待出牌 颜色占比阈值
+    "landlord": 0.95,  # 地主标记 匹配置信度阈值
+    "card": 0.95,  # 卡牌 匹配置信度阈值
+    "end-game": 0.25,  # 游戏结束 颜色占比阈值
 }
 
 # 间隔（秒）
@@ -41,6 +39,6 @@ GUI_LOCATION = {
 }
 
 # 其他参数
-FONT_SIZE = 25
-LOG_PATH = Path.home() / "poker-counter.log"
-LOG_LEVEL = logging.INFO
+FONT_SIZE = 25  # 标签字体大小
+LOG_LEVEL = "DEBUG"  # 日志记录级别（DEBUG、INFO、WARNING、ERROR、CRITICAL）
+LOG_RETENTION = 3  # 日志保留数量
