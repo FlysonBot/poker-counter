@@ -1,10 +1,10 @@
 """
-区域管理器，负责截取和更新游戏区域的状态
+区域模块，负责截取区域截图。
 """
 
 from typing import Tuple
 
-from exceptions import GameStateError
+from exceptions import ScreenshotError
 from logger import logger
 from regions.region_state import RegionState
 from image_processing import AnyImage
@@ -14,10 +14,17 @@ Coordinate = Tuple[int, int]
 
 class Region:
     """
-    管理游戏区域的截取和牌面识别
+    区域类，负责截取区域截图。
     """
 
     def __init__(self, top_left: Coordinate, bottom_right: Coordinate) -> None:
+        """
+        初始化区域。
+
+        :param top_left: 区域左上角坐标
+        :param bottom_right: 区域右下角坐标
+        """
+
         self.top_left = top_left
         self.bottom_right = bottom_right
         self.state = RegionState.WAIT
@@ -29,13 +36,15 @@ class Region:
 
     def capture(self, image: AnyImage) -> None:
         """
-        从图像中截取区域
+        从图像中截取区域。
+
+        :param image: 输入图像
         """
         x1, y1 = self.top_left
         x2, y2 = self.bottom_right
         region_screenshot: AnyImage = image[y1:y2, x1:x2]
         if region_screenshot.size == 0:
-            raise GameStateError(
+            raise ScreenshotError(
                 f"无效区域截图：{self.top_left} -> {self.bottom_right}"
             )
         self.region_screenshot: AnyImage = region_screenshot

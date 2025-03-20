@@ -1,5 +1,5 @@
 """
-悬浮窗组件，用于显示记牌器的实时信息
+悬浮窗组件模块，用于显示记牌器的实时信息。
 """
 
 import tkinter as tk
@@ -13,10 +13,16 @@ from logger import logger
 
 class MainWindow(tk.Toplevel):
     """
-    主界面组件，显示记牌器的实时信息
+    主界面组件类，显示记牌器的实时信息。
     """
 
     def __init__(self, master: tk.Tk, counter: CardCounter) -> None:
+        """
+        初始化主界面组件。
+
+        :param master: 父窗口
+        :param counter: 记牌器对象
+        """
         super().__init__(master)
         self.root = master
         self.counter = counter
@@ -27,14 +33,14 @@ class MainWindow(tk.Toplevel):
 
     def _setup_window(self) -> None:
         """
-        设置窗口属性
+        设置窗口属性，包括窗口大小、位置、背景等。
         """
         # 基本外观设置
         self.title("记牌器")
-        self.attributes("-topmost", True)  # 置顶
+        self.attributes("-topmost", True)  # 置顶  # type: ignore
         self.overrideredirect(True)  # 去掉窗口边框
         self.root.configure(bg="white")  # 窗口背景设为白色
-        self.root.attributes("-transparentcolor", "white")  # 使白色背景变得透明
+        self.root.attributes("-transparentcolor", "white")  # 使白色背景变得透明  # type: ignore
 
         # 设置窗口大小并读取窗口偏移量设置
         self.root.update_idletasks()  # 动态调整窗口大小以匹配内容大小
@@ -62,6 +68,9 @@ class MainWindow(tk.Toplevel):
         logger.info(f"窗口偏移量为：{x_offset}，{y_offset}")
 
     def _setup_binding(self) -> None:
+        """
+        绑定窗口拖动事件和键盘热键。
+        """
         # 绑定窗口拖动事件
         self.bind("<Button-1>", self._on_drag_start)
         self.bind("<B1-Motion>", self._on_drag_move)
@@ -73,7 +82,7 @@ class MainWindow(tk.Toplevel):
 
     def _create_table(self) -> None:
         """
-        创建记牌器表格
+        创建记牌器表格，显示牌型和数量。
         """
         # 牌型显示表格
         self.table_frame = ttk.Frame(self)
@@ -113,14 +122,18 @@ class MainWindow(tk.Toplevel):
 
     def _on_drag_start(self, event: tk.Event[Any]) -> None:
         """
-        记录拖动起始位置
+        记录拖动起始位置。
+
+        :param event: 鼠标事件
         """
         self._drag_start_x = event.x
         self._drag_start_y = event.y
 
     def _on_drag_move(self, event: tk.Event[Any]) -> None:
         """
-        处理窗口拖动
+        处理窗口拖动。
+
+        :param event: 鼠标事件
         """
         x = self.winfo_x() + (event.x - self._drag_start_x)
         y = self.winfo_y() + (event.y - self._drag_start_y)
@@ -128,7 +141,7 @@ class MainWindow(tk.Toplevel):
 
     def update_display(self) -> None:
         """
-        更新悬浮窗的显示内容
+        更新窗口的显示内容。
         """
         for card, label in self.count_labels.items():
             label.config(text=str(self.counter.get_count(card)))

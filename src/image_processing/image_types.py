@@ -1,3 +1,7 @@
+"""
+图像类型模块，定义图像类型和匹配结果类型。
+"""
+
 import numpy as np
 from typing import Any
 

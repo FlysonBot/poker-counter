@@ -1,3 +1,7 @@
+"""
+颜色占比计算模块，计算图片中特定颜色的占比。
+"""
+
 from typing import Union
 
 import cv2
@@ -9,7 +13,8 @@ def color_percentage(
     image: AnyImage, target_color: Union[RGB, int], tolerance: int = 30
 ) -> float:
     """
-    计算图片中特定颜色的占比
+    计算图片中特定颜色的占比。
+
     :param image: 输入图像（BGR 或灰度格式）
     :param target_color: 目标颜色（BGR 值或灰度值）
     :param tolerance: 颜色容差
@@ -31,10 +36,10 @@ def color_percentage(
     mask = cv2.inRange(image, lower_bound, upper_bound)
 
     # 计算目标颜色的像素数量（通过统计掩码中非0的数值）
-    target_pixels = np.count_nonzero(mask)
+    target_pixels: int = np.count_nonzero(mask)
 
     # 计算总像素数量
-    total_pixels = image.shape[0] * image.shape[1]
+    total_pixels: int = image.shape[0] * image.shape[1]
 
     # 返回目标颜色占比
     return target_pixels / total_pixels

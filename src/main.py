@@ -1,3 +1,7 @@
+"""
+主程序入口模块，负责启动应用程序、运行后端代码，并初始化记牌器界面。
+"""
+
 import tkinter as tk
 from threading import Thread
 
@@ -27,7 +31,10 @@ if __name__ == "__main__":
     window = MainWindow(root, counter)
 
     # 更新窗口内容
-    def update_window():
+    def update_window() -> None:
+        """
+        定时更新记牌器界面显示内容。
+        """
         window.update_display()
         root.after(UPDATE_INTERVAL, update_window)  # 定时更新界面
 

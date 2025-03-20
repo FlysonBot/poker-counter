@@ -1,3 +1,7 @@
+"""
+游戏状态模块，负责监控游戏状态并识别牌局中的牌。
+"""
+
 from time import sleep
 
 import cv2
@@ -5,18 +9,27 @@ import numpy as np
 from PIL import ImageGrab
 
 from config import REGIONS, THRESHOLDS
-from image_processing import GrayscaleImage, MatchResult
-from image_processing.color_percentage import color_percentage
-from image_processing.template_match import best_template_match
-from image_processing.templates import MARKS
+from image_processing import (
+    MARKS,
+    GrayscaleImage,
+    MatchResult,
+    best_template_match,
+    color_percentage,
+)
 from logger import logger
-from regions.card_region import CardRegion
-from regions.landlord_enum import Landlord
-from regions.region import Region
+from regions import CardRegion, LandlordLocation, Region
 
 
 class GameState:
+    """
+    游戏状态类，负责监控游戏状态并识别牌局中的牌。
+    """
+
     def __init__(self) -> None:
+        """
+        初始化游戏状态，设置游戏区域和其他标记区域。
+        """
+
         self.card_regions = {
             "left": CardRegion(*REGIONS["playing_left"]),
             "middle": CardRegion(*REGIONS["playing_middle"]),
@@ -33,28 +46,45 @@ class GameState:
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
     def get_screenshot(self) -> GrayscaleImage:
+        """
+        获取当前屏幕截图。
+
+        :return: 灰度截图
+        """
+
         try:
             return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
 
         except OSError:
-            logger.info(
-                "Error taking screenshot (likely due to screen timeout)."
-                "Starts to retry every 2 seconds."
-            )
+            logger.info("截图失败，可能是屏幕超时。将在2秒后重试。")
+            sleep(2)
 
             while True:
                 try:
                     return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
 
                 except OSError:
-                    logger.debug("Retrying to take screenshot...")
+                    logger.debug("截图失败，将在2秒后重试。")
                     sleep(2)
 
     def get_my_cards(self) -> dict[str, int]:
+        """
+        获取当前玩家的手牌。
+
+        :return: 手牌字典
+        """
+
         return self.my_cards_region.recognize_cards()
 
     def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[MatchResult]:
-        logger.info("正在寻找地主标记...")
+        """
+        寻找地主标记。
+
+        :param screenshot: 屏幕截图
+        :return: 地主标记的置信度和位置
+        """
+
+        logger.debug("正在寻找地主标记...")
 
         # 为每个区域截图
         regions = self.landlord_marker.values()
@@ -67,14 +97,28 @@ class GameState:
         ]
 
     def is_game_started(self, screenshot: GrayscaleImage) -> bool:
+        """
+        判断游戏是否开始。
+
+        :param screenshot: 屏幕截图
+        :return: 游戏是否开始
+        """
+
         confidences, _ = zip(*self._find_landlord_mark(screenshot))
 
-        confidence = max(confidences)
+        confidence: float = max(confidences)
         logger.debug(f"置信度为：{confidence}")
 
-        return any(confidence >= THRESHOLDS["landlord"])
+        return confidence >= THRESHOLDS["landlord"]
 
-    def find_landlord_location(self, screenshot: GrayscaleImage):
+    def find_landlord_location(self, screenshot: GrayscaleImage) -> LandlordLocation:
+        """
+        确定地主的位置。
+
+        :param screenshot: 屏幕截图
+        :return: 地主位置
+        """
+
         # 找到置信度/匹配度最高地主标记的x坐标
         best_match_x: int = max(
             self._find_landlord_mark(screenshot),
@@ -85,19 +129,26 @@ class GameState:
 
         # 判断地主是谁（通过比较各区域左上角的x坐标）
         if best_match_x < REGIONS["remaining_cards_middle"][0][0]:
-            return Landlord.LEFT
+            return LandlordLocation.LEFT
         if best_match_x < REGIONS["remaining_cards_right"][0][0]:
-            return Landlord.MIDDLE
-        return Landlord.RIGHT
+            return LandlordLocation.MIDDLE
+        return LandlordLocation.RIGHT
 
-    def is_game_ended(self, screenshot: GrayscaleImage):
-        logger.info("正在计算底牌区域白色占比...")
+    def is_game_ended(self, screenshot: GrayscaleImage) -> bool:
+        """
+        判断游戏是否结束。
+
+        :param screenshot: 屏幕截图
+        :return: 游戏是否结束
+        """
+
+        logger.debug("正在计算底牌区域白色占比...")
 
         # 从截图中提取底牌区域图片
         self.game_end_marker.capture(screenshot)
 
         # 计算白色在图片中的占比
-        percentage = color_percentage(
+        percentage: float = color_percentage(
             self.game_end_marker.region_screenshot, (255, 255, 255)
         )
         logger.debug(f"底牌区域白色占比为 {percentage}")

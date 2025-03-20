@@ -1,20 +1,32 @@
-from itertools import cycle
+"""
+后端逻辑模块，负责游戏的后台逻辑处理，包括牌局状态的监控和记牌。
+"""
+
 from time import sleep
 from typing import NoReturn
+from itertools import cycle
 
-from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
+from regions import Region, RegionState, LandlordLocation
+from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
 from logger import logger
-from regions import Region, RegionState
 from image_processing import GrayscaleImage
-
 from .game_state import GameState
 from .card_counter import CardCounter
 
 
 def backend_logic(counter: CardCounter) -> NoReturn:
-    """后端代码"""
+    """
+    后端逻辑主函数，负责监控游戏状态并更新记牌器。
+
+    :param counter: 记牌器对象
+    """
 
     def mark_cards(cards: dict[str, int]) -> None:
+        """
+        标记已出的牌。
+
+        :param cards: 已出的牌
+        """
         for card, count in cards.items():
             for _ in range(count):
                 counter.mark(card)
@@ -35,7 +47,7 @@ def backend_logic(counter: CardCounter) -> NoReturn:
         logger.info("游戏开始")
 
         # 初始化地主
-        landlord = gs.find_landlord_location(gs.get_screenshot())
+        landlord: LandlordLocation = gs.find_landlord_location(gs.get_screenshot())
         logger.info(f"地主是{landlord.name}")
         region_cycle = cycle(
             [

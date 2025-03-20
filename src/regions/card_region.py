@@ -1,3 +1,7 @@
+"""
+牌区域模块，负责管理牌区域的截图、状态更新，和牌识别。
+"""
+
 from config import THRESHOLDS
 from image_processing import MARKS, color_percentage, identify_cards, template_match
 from logger import logger
@@ -6,9 +10,13 @@ from .region_state import RegionState
 
 
 class CardRegion(Region):
+    """
+    牌区域类，负责管理牌区域的截图、状态更新，和牌识别。
+    """
+
     def update_state(self) -> None:
         """
-        更新区域状态
+        更新区域状态，判断区域是否处于等待、出牌或不出牌状态。
         """
 
         # 先检查是否为PASS状态
@@ -35,8 +43,11 @@ class CardRegion(Region):
 
     def recognize_cards(self) -> dict[str, int]:
         """
-        识别区域内的牌
+        识别区域内的牌。
+
+        :return: 识别出的牌及其数量的字典
         """
+        
         if self.state != RegionState.ACTIVE:
             logger.warning("尝试在非活跃区域（出了牌的区域）进行识牌")
             return {}
