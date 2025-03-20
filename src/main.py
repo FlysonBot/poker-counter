@@ -14,7 +14,7 @@ from main_window import MainWindow
 UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 
 if __name__ == "__main__":
-    logger.info("应用程序已启动")
+    logger.success("应用程序已启动")
 
     # 创建应用
     root = tk.Tk()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # 第二线程运行后端循环代码
     thread = Thread(target=backend_logic, args=(counter,), daemon=True)
     thread.start()
-    logger.info("后端代码成功在第二线程运行")
+    logger.success("后端代码成功在第二线程运行")
 
     # 创建窗口
     window = MainWindow(root, counter)

@@ -29,7 +29,7 @@ class MainWindow(tk.Toplevel):
         self._setup_window()
         self._setup_binding()
         self._create_table()
-        logger.info("主界面初始化完毕")
+        logger.success("主界面初始化完毕")
 
     def _setup_window(self) -> None:
         """
@@ -67,6 +67,8 @@ class MainWindow(tk.Toplevel):
         self.root.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
         logger.info(f"窗口偏移量为：{x_offset}，{y_offset}")
 
+        logger.success("窗口属性设置完毕")
+
     def _setup_binding(self) -> None:
         """
         绑定窗口拖动事件和键盘热键。
@@ -78,12 +80,13 @@ class MainWindow(tk.Toplevel):
         # 绑定键盘热键
         self.bind("<KeyPress-q>", lambda event: self.root.destroy())
 
-        logger.info("键盘和鼠标事件绑定完毕")
+        logger.success("窗口键盘和鼠标事件绑定成功")
 
     def _create_table(self) -> None:
         """
         创建记牌器表格，显示牌型和数量。
         """
+
         # 牌型显示表格
         self.table_frame = ttk.Frame(self)
         self.table_frame.pack(padx=0, pady=0)
@@ -119,6 +122,8 @@ class MainWindow(tk.Toplevel):
             )
             label.grid(row=1, column=idx, padx=0, pady=0)
             self.count_labels[card] = label
+        
+        logger.success("窗口记牌器表格创建完毕")
 
     def _on_drag_start(self, event: tk.Event[Any]) -> None:
         """
@@ -145,4 +150,4 @@ class MainWindow(tk.Toplevel):
         """
         for card, label in self.count_labels.items():
             label.config(text=str(self.counter.get_count(card)))
-        logger.debug("Overlay display updated")
+        logger.trace("窗口内容更新完毕")

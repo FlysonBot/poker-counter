@@ -33,7 +33,7 @@ class CardCounter:
         """
 
         self.reset()
-        logger.info("记牌器初始化成功")
+        logger.success("记牌器初始化成功")
 
     def reset(self) -> None:
         """
@@ -41,7 +41,7 @@ class CardCounter:
         """
         
         self.counts: dict[str, int] = self.INITIAL_COUNTS.copy()
-        logger.debug("记牌器状态已还原")
+        logger.success("记牌器状态已还原")
 
     def mark(self, card: str) -> None:
         """
@@ -52,7 +52,7 @@ class CardCounter:
 
         if self.counts.get(card, 0) > 0:
             self.counts[card] -= 1
-            logger.info(f"标记牌：{card} (剩余：{self.counts[card]})")
+            logger.debug(f"标记牌：{card} (剩余：{self.counts[card]})")
 
         else:
             logger.warning(f"尝试标记不存在的牌型或已出完的牌：{card}")

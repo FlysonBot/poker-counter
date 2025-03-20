@@ -22,7 +22,7 @@ def load_template(template: str) -> GrayscaleImage:
     :return: 模板图像
     """
 
-    logger.debug(f"尝试加载模板: {template}")
+    logger.trace(f"尝试加载模板: {template}")
     template_path: Path = TEMPLATE_DIR / f"{template}.png"
 
     if not template_path.exists():
@@ -50,9 +50,11 @@ def load_templates(template_names: set[str]) -> dict[str, GrayscaleImage]:
     for template_name in template_names:
         templates[template_name] = load_template(template_name)
 
+    logger.success(f"成功加载以下模板：{template_names}")
     return templates
 
 
+MARK_TEMPLATE_NAMES: set[str] = {"PASS", "Landlord"}
 CARD_TEMPLATE_NAMES: set[str] = {
     "3",
     "4",
@@ -69,8 +71,7 @@ CARD_TEMPLATE_NAMES: set[str] = {
     "2",
     "王",
 }
-MARK_TEMPLATE_NAMES: set[str] = {"PASS", "Landlord"}
 
 
-CARDS: dict[str, GrayscaleImage] = load_templates(CARD_TEMPLATE_NAMES)
 MARKS: dict[str, GrayscaleImage] = load_templates(MARK_TEMPLATE_NAMES)
+CARDS: dict[str, GrayscaleImage] = load_templates(CARD_TEMPLATE_NAMES)

@@ -2,16 +2,17 @@
 后端逻辑模块，负责游戏的后台逻辑处理，包括牌局状态的监控和记牌。
 """
 
+from itertools import cycle
 from time import sleep
 from typing import NoReturn
-from itertools import cycle
 
-from regions import Region, RegionState, LandlordLocation
-from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
-from logger import logger
+from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from image_processing import GrayscaleImage
-from .game_state import GameState
+from logger import logger
+from regions import LandlordLocation, Region, RegionState
+
 from .card_counter import CardCounter
+from .game_state import GameState
 
 
 def backend_logic(counter: CardCounter) -> NoReturn:
@@ -32,17 +33,17 @@ def backend_logic(counter: CardCounter) -> NoReturn:
                 counter.mark(card)
                 logger.info(f"已标记 {card}")
 
-    logger.info("开始游戏")
+    logger.trace("开始后端循环代码")
 
     while True:
         # 初始化游戏对象
         gs = GameState()
-        logger.info("游戏初始化完成")
+        logger.success("游戏初始化完成")
         counter.reset()  # 重置牌数量
 
         # 等待游戏开始
         while not gs.is_game_started(gs.get_screenshot()):
-            logger.debug("正在等待游戏开始...")
+            logger.trace("正在等待游戏开始...")
             sleep(GAME_START_INTERVAL)
         logger.info("游戏开始")
 
@@ -82,7 +83,13 @@ def backend_logic(counter: CardCounter) -> NoReturn:
 
             # 如果区域有牌，并且不是自己，则识别并标记牌
             if current_region.state == RegionState.ACTIVE and not current_region.is_me:
-                mark_cards(current_region.recognize_cards())
+                cards = current_region.recognize_cards()
+                logger.info(f"识别到已出牌：{cards}")
+                mark_cards(cards)
+
+            elif current_region.state == RegionState.PASS:
+                logger.info("玩家选择不出牌")
 
             # 并更新截图及当前区域
             current_region = next(region_cycle)
+            logger.trace("跳到下一个区域")

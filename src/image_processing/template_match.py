@@ -61,6 +61,6 @@ def identify_cards(image: AnyImage, threshold: float) -> Dict[str, int]:
 
         if amount > 0:
             results[card] = amount
-            logger.info(f"检测到 {amount} 张 {card}")
+            logger.debug(f"检测到 {amount} 张 {card}")
 
     return results

@@ -45,6 +45,8 @@ class GameState:
         self.game_end_marker = Region(*REGIONS["3_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
+        logger.success("所有区域初始化完毕")
+
     def get_screenshot(self) -> GrayscaleImage:
         """
         获取当前屏幕截图。
@@ -64,7 +66,7 @@ class GameState:
                     return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
 
                 except OSError:
-                    logger.debug("截图失败，将在2秒后重试。")
+                    logger.trace("截图失败，将在2秒后重试。")
                     sleep(2)
 
     def get_my_cards(self) -> dict[str, int]:
@@ -74,7 +76,11 @@ class GameState:
         :return: 手牌字典
         """
 
-        return self.my_cards_region.recognize_cards()
+        logger.trace("正在识别当前玩家的手牌...")
+        cards = self.my_cards_region.recognize_cards()
+        logger.info(f"当前玩家的手牌为：{cards}")
+        
+        return cards
 
     def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[MatchResult]:
         """
@@ -84,7 +90,7 @@ class GameState:
         :return: 地主标记的置信度和位置
         """
 
-        logger.debug("正在寻找地主标记...")
+        logger.trace("正在寻找地主标记...")
 
         # 为每个区域截图
         regions = self.landlord_marker.values()
@@ -107,7 +113,7 @@ class GameState:
         confidences, _ = zip(*self._find_landlord_mark(screenshot))
 
         confidence: float = max(confidences)
-        logger.debug(f"置信度为：{confidence}")
+        logger.trace(f"地主标记匹配置信度为：{confidence}")
 
         return confidence >= THRESHOLDS["landlord"]
 
@@ -129,9 +135,12 @@ class GameState:
 
         # 判断地主是谁（通过比较各区域左上角的x坐标）
         if best_match_x < REGIONS["remaining_cards_middle"][0][0]:
+            logger.info("地主是上家")
             return LandlordLocation.LEFT
         if best_match_x < REGIONS["remaining_cards_right"][0][0]:
+            logger.info("地主是自己")
             return LandlordLocation.MIDDLE
+        logger.info("地主是下家")
         return LandlordLocation.RIGHT
 
     def is_game_ended(self, screenshot: GrayscaleImage) -> bool:
@@ -142,7 +151,7 @@ class GameState:
         :return: 游戏是否结束
         """
 
-        logger.debug("正在计算底牌区域白色占比...")
+        logger.trace("正在计算底牌区域白色占比...")
 
         # 从截图中提取底牌区域图片
         self.game_end_marker.capture(screenshot)
@@ -151,6 +160,6 @@ class GameState:
         percentage: float = color_percentage(
             self.game_end_marker.region_screenshot, (255, 255, 255)
         )
-        logger.debug(f"底牌区域白色占比为 {percentage}")
+        logger.trace(f"底牌区域白色占比为 {percentage}")
 
         return percentage > THRESHOLDS["end-game"]
