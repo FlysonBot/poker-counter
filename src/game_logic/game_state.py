@@ -5,6 +5,7 @@ import numpy as np
 from PIL import ImageGrab
 
 from config import REGIONS, THRESHOLDS
+from image_processing import GrayscaleImage, MatchResult
 from image_processing.color_percentage import color_percentage
 from image_processing.template_match import best_template_match
 from image_processing.templates import MARKS
@@ -15,7 +16,7 @@ from regions.region import Region
 
 
 class GameState:
-    def __init__(self):
+    def __init__(self) -> None:
         self.card_regions = {
             "left": CardRegion(*REGIONS["playing_left"]),
             "middle": CardRegion(*REGIONS["playing_middle"]),
@@ -31,9 +32,9 @@ class GameState:
         self.game_end_marker = Region(*REGIONS["3_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
-    def get_screenshot(self):
+    def get_screenshot(self) -> GrayscaleImage:
         try:
-            return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+            return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
 
         except OSError:
             logger.info(
@@ -43,16 +44,16 @@ class GameState:
 
             while True:
                 try:
-                    return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+                    return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
 
                 except OSError:
                     logger.debug("Retrying to take screenshot...")
                     sleep(2)
 
-    def get_my_cards(self):
+    def get_my_cards(self) -> dict[str, int]:
         return self.my_cards_region.recognize_cards()
 
-    def _find_landlord_mark(self, screenshot: np.ndarray):
+    def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[MatchResult]:
         logger.info("正在寻找地主标记...")
 
         # 为每个区域截图
@@ -63,9 +64,9 @@ class GameState:
         return [
             best_template_match(region.region_screenshot, MARKS["Landlord"])
             for region in regions
-        ]  # 返回的是 list[tuple[confidence, location]]
+        ]
 
-    def is_game_started(self, screenshot: np.ndarray):
+    def is_game_started(self, screenshot: GrayscaleImage) -> bool:
         confidences, _ = zip(*self._find_landlord_mark(screenshot))
 
         confidence = max(confidences)
@@ -73,7 +74,7 @@ class GameState:
 
         return any(confidence >= THRESHOLDS["landlord"])
 
-    def determine_landlord_location(self, screenshot):
+    def find_landlord_location(self, screenshot: GrayscaleImage):
         # 找到置信度/匹配度最高地主标记的x坐标
         best_match_x: int = max(
             self._find_landlord_mark(screenshot),
@@ -89,7 +90,7 @@ class GameState:
             return Landlord.MIDDLE
         return Landlord.RIGHT
 
-    def is_game_ended(self, screenshot: np.ndarray):
+    def is_game_ended(self, screenshot: GrayscaleImage):
         logger.info("正在计算底牌区域白色占比...")
 
         # 从截图中提取底牌区域图片

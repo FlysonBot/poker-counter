@@ -1,15 +1,16 @@
 from pathlib import Path
 
-import numpy as np
 from cv2 import imread
 
 from exceptions import TemplateLoadingError
 from logger import logger
 
+from .image_types import GrayscaleImage
+
 TEMPLATE_DIR = Path("templates")
 
 
-def load_template(template: str) -> np.ndarray:
+def load_template(template: str) -> GrayscaleImage:
     """加载单个模板"""
     logger.debug(f"尝试加载模板: {template}")
     template_path = TEMPLATE_DIR / f"{template}.png"
@@ -24,12 +25,12 @@ def load_template(template: str) -> np.ndarray:
         raise TemplateLoadingError(str(template_path))
 
     logger.debug(f"模板加载成功：{template_path}")
-    return img
+    return img  # type: ignore
 
 
-def load_templates(template_names: set[str]) -> dict[str, np.ndarray]:
+def load_templates(template_names: set[str]) -> dict[str, GrayscaleImage]:
     """预加载所有模板"""
-    templates = {}
+    templates: dict[str, GrayscaleImage] = {}
 
     for template_name in template_names:
         templates[template_name] = load_template(template_name)
@@ -37,7 +38,7 @@ def load_templates(template_names: set[str]) -> dict[str, np.ndarray]:
     return templates
 
 
-CARD_TEMPLATE_NAMES = {
+CARD_TEMPLATE_NAMES: set[str] = {
     "3",
     "4",
     "5",
@@ -53,8 +54,8 @@ CARD_TEMPLATE_NAMES = {
     "2",
     "王",
 }
-MARK_TEMPLATE_NAMES = {"PASS", "Landlord"}
+MARK_TEMPLATE_NAMES: set[str] = {"PASS", "Landlord"}
 
 
-CARDS = load_templates(CARD_TEMPLATE_NAMES)
-MARKS = load_templates(MARK_TEMPLATE_NAMES)
+CARDS: dict[str, GrayscaleImage] = load_templates(CARD_TEMPLATE_NAMES)
+MARKS: dict[str, GrayscaleImage] = load_templates(MARK_TEMPLATE_NAMES)

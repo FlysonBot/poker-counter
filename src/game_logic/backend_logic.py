@@ -1,18 +1,23 @@
+from itertools import cycle
 from time import sleep
 from typing import NoReturn
-from itertools import cycle
 
-from regions import Region, RegionState
-from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
+from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from logger import logger
+from regions import Region, RegionState
+from image_processing import GrayscaleImage
+
 from .game_state import GameState
+from .card_counter import CardCounter
 
 
-def backend_logic(counter) -> NoReturn:
-    def mark_cards(cards) -> None:
+def backend_logic(counter: CardCounter) -> NoReturn:
+    """后端代码"""
+
+    def mark_cards(cards: dict[str, int]) -> None:
         for card, count in cards.items():
             for _ in range(count):
-                counter.mark_card(card)
+                counter.mark(card)
                 logger.info(f"已标记 {card}")
 
     logger.info("开始游戏")
@@ -30,7 +35,7 @@ def backend_logic(counter) -> NoReturn:
         logger.info("游戏开始")
 
         # 初始化地主
-        landlord = gs.determine_landlord_location(gs.get_screenshot())
+        landlord = gs.find_landlord_location(gs.get_screenshot())
         logger.info(f"地主是{landlord.name}")
         region_cycle = cycle(
             [
@@ -54,7 +59,7 @@ def backend_logic(counter) -> NoReturn:
 
         # 实时记录
         while not gs.is_game_ended(screenshot):
-            screenshot = gs.get_screenshot()  # 更新截图
+            screenshot: GrayscaleImage = gs.get_screenshot()  # 更新截图
             current_region.capture(screenshot)  # 更新当前出牌区域截图
             current_region.update_state()  # 更新当前出牌区域状态
 

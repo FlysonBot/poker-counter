@@ -1,5 +1,6 @@
 from .color_percentage import color_percentage
-from .template_match import template_match, best_template_match, identify_cards
+from .image_types import RGB, AnyImage, GrayscaleImage, MatchResult
+from .template_match import best_template_match, identify_cards, template_match
 from .templates import CARDS, MARKS
 
 __all__ = [
@@ -9,4 +10,8 @@ __all__ = [
     "identify_cards",
     "CARDS",
     "MARKS",
+    "GrayscaleImage",
+    "AnyImage",
+    "RGB",
+    "MatchResult",
 ]

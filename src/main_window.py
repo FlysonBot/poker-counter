@@ -4,11 +4,11 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict
+from typing import Any, Dict
 
+from config import FONT_SIZE, GUI_LOCATION
 from game_logic import CardCounter
 from logger import logger
-from config import GUI_LOCATION, FONT_SIZE
 
 
 class MainWindow(tk.Toplevel):
@@ -16,7 +16,7 @@ class MainWindow(tk.Toplevel):
     主界面组件，显示记牌器的实时信息
     """
 
-    def __init__(self, master, counter: CardCounter):
+    def __init__(self, master: tk.Tk, counter: CardCounter) -> None:
         super().__init__(master)
         self.root = master
         self.counter = counter
@@ -111,14 +111,14 @@ class MainWindow(tk.Toplevel):
             label.grid(row=1, column=idx, padx=0, pady=0)
             self.count_labels[card] = label
 
-    def _on_drag_start(self, event) -> None:
+    def _on_drag_start(self, event: tk.Event[Any]) -> None:
         """
         记录拖动起始位置
         """
         self._drag_start_x = event.x
         self._drag_start_y = event.y
 
-    def _on_drag_move(self, event) -> None:
+    def _on_drag_move(self, event: tk.Event[Any]) -> None:
         """
         处理窗口拖动
         """

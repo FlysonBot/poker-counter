@@ -6,7 +6,7 @@ class CardCounter:
     牌数统计器，跟踪剩余牌的数量
     """
 
-    INITIAL_COUNTS = {
+    INITIAL_COUNTS: dict[str, int] = {
         "3": 4,
         "4": 4,
         "5": 4,
@@ -23,13 +23,13 @@ class CardCounter:
         "王": 2,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reset()
         logger.info("记牌器初始化成功")
 
     def reset(self) -> None:
         """重置计数器"""
-        self.counts = self.INITIAL_COUNTS.copy()
+        self.counts: dict[str, int] = self.INITIAL_COUNTS.copy()
         logger.debug("记牌器状态已还原")
 
     def mark(self, card: str) -> None:

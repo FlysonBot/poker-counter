@@ -10,8 +10,8 @@ from config import LOG_LEVEL, LOG_PATH
 
 
 class Logger:
-    def __init__(self):
-        self.logger = logging.getLogger("poker_counter")
+    def __init__(self) -> None:
+        self.logger: logging.Logger = logging.getLogger("poker_counter")
         self.logger.setLevel(LOG_LEVEL)
 
         # 文件handler
@@ -28,13 +28,13 @@ class Logger:
         self.logger.addHandler(console_handler)
 
         # 设置异常handler
-        sys.excepthook = self.handle_exception
+        sys.excepthook = self.handle_exception  # type: ignore
 
-    def handle_exception(self, exc_type, exc_value, exc_traceback):
+    def handle_exception(self, exc_type, exc_value, exc_traceback) -> None:  # type: ignore
         if issubclass(exc_type, KeyboardInterrupt):
             self.logger.info("用户手动结束了进程")
             sys.exit(0)
-        self.logger.error("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
+        self.logger.error("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))  # type: ignore
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.logger, name)
