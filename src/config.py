@@ -7,19 +7,15 @@ from typing import Dict, Tuple
 
 # 区域坐标配置 (单位: 像素)
 REGIONS: Dict[str, Tuple[Tuple[int, int], Tuple[int, int]]] = {
-    "playing_left": ((260, 346), (700, 446)),
-    "playing_middle": ((425, 500), (970, 710)),
-    "playing_right": ((700, 346), (1140, 446)),
-    "my_cards": ((350, 730), (1020, 820)),
-    "20cards_left": ((20, 555), (85, 580)),
-    "20cards_middle": ((765, 900), (830, 930)),
-    "20cards_right": ((1310, 555), (1380, 580)),
-    "3_shown_cards": ((540,120), (860,140)),
+    "playing_left": ((260, 346), (700, 446)),  # 左侧出牌区域
+    "playing_middle": ((425, 500), (970, 710)),  # 中间出牌区域
+    "playing_right": ((700, 346), (1140, 446)),  # 右侧出牌区域
+    "my_cards": ((350, 730), (1020, 820)),  # 中间我的所有牌的显示区域
+    "remaining_cards_left": ((20, 555), (85, 580)),  # 左边剩余牌数显示区域
+    "remaining_cards_middle": ((765, 900), (830, 930)),  # 中间剩余牌数显示区域
+    "remaining_cards_right": ((1310, 555), (1380, 580)),  # 右边剩余牌数显示区域
+    "3_displayed_cards": ((540,120), (860,140)),  # 游戏结束时上方三张底牌的显示区域
 }
-
-# 打牌界面分3份，取两条分割线坐标
-DIVIDER_LEFT = 600
-DIVIDER_RIGHT = 900
 
 # 模板匹配阈值
 THRESHOLDS = {

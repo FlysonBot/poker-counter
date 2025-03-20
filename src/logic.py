@@ -1,10 +1,11 @@
 from time import sleep
 from typing import NoReturn
 
-from classes.game import Game
+from regions.region_manager import RegionManager
 from classes.region import Region, State
 from config import SCREENSHOT_INTERVAL, GAME_START_INTERVAL
 from logger import logger
+from src.regions import region_manger
 
 
 def backend_logic(counter) -> NoReturn:
@@ -18,35 +19,35 @@ def backend_logic(counter) -> NoReturn:
 
     while True:
         # 初始化游戏对象
-        game = Game()
+        region_manger = RegionManager()
         logger.info("游戏初始化完成")
         counter.reset()  # 重置牌数量
 
         # 等待游戏开始
-        while not game.determine_game_start(game.get_screenshot()):
+        while not region_manger.determine_game_start(region_manger.get_screenshot()):
             logger.debug("等待中...")
             sleep(GAME_START_INTERVAL)
         logger.info("游戏开始")
 
         # 初始化地主
-        landlord = game.determine_landlord(game.get_screenshot())
+        landlord = region_manger.determine_landlord_location(region_manger.get_screenshot())
         logger.info(f"地主是{landlord.name}")
         for _ in range(landlord.value):
-            next(game.regions)
+            next(region_manger.regions)
 
         # 获取截图
-        screenshot = game.get_screenshot()
-        current_region: Region = next(game.regions)
+        screenshot = region_manger.get_screenshot()
+        current_region: Region = next(region_manger.regions)
         current_region.is_landlord = True  # 标记地主区域
 
         # 初始化自身
-        game.middle_region.is_me = True
-        game.my_region.capture_region(game.get_screenshot())
-        mark_cards(game.get_my_cards())
+        region_manger.card_regions["middle"].is_me = True
+        region_manger.my_cards_region.capture(region_manger.get_screenshot())
+        mark_cards(region_manger.get_my_cards())
 
         # 实时记录
-        while not game.determine_game_end(screenshot):
-            screenshot = game.get_screenshot()
+        while not region_manger.determine_game_end(screenshot):
+            screenshot = region_manger.get_screenshot()
             current_region.capture_region(screenshot)
             current_region.update_region_state()
 
@@ -60,4 +61,4 @@ def backend_logic(counter) -> NoReturn:
                 mark_cards(current_region.recognize_cards())
 
             # 并更新截图及当前区域
-            current_region = next(game.regions)
+            current_region = next(region_manger.regions)

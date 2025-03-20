@@ -7,3 +7,7 @@ class TemplateLoadingError(Exception):
     def __init__(self, template_path: str):
         super().__init__(f"无法加载模板: {template_path}")
         self.template_path = template_path
+
+class GameStateError(Exception):
+    """游戏状态异常"""
+    pass
