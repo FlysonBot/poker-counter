@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from PIL import ImageGrab
+from time import sleep
 
 from regions.landlord_enum import Landlord
 from regions.region import Region
@@ -28,7 +29,18 @@ class GameState:
         self.my_cards_region = CardRegion(REGIONS["my_cards"])
 
     def get_screenshot(self):
-        return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+        try:
+            return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+        
+        except OSError:
+            logger.info("Error taking screenshot. The screen had likely turned off. Retrying untill error resolve on its own.")
+
+            while True:
+                try:
+                    return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+                except OSError:
+                    sleep(2)
+
 
     def get_my_cards(self):
         return self.my_cards_region.recognize_cards()
