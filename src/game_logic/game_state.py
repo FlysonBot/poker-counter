@@ -12,7 +12,7 @@ from image_processing.templates import MARKS
 from logger import logger
 
 
-class RegionManager:
+class GameState:
     def __init__(self):
         self.card_regions = {
             "left": CardRegion(REGIONS["playing_left"]),
@@ -48,7 +48,7 @@ class RegionManager:
 
         return results
     
-    def determine_game_start(self, screenshot: np.ndarray):
+    def is_game_started(self, screenshot: np.ndarray):
         confidences = zip(*self._find_landlord_mark(screenshot))[0]
         logger.debug(f"置信度为：{confidences}")
 
@@ -70,7 +70,7 @@ class RegionManager:
         else:
             return Landlord.RIGHT
 
-    def determine_game_end(self, screenshot: np.ndarray):
+    def is_game_ended(self, screenshot: np.ndarray):
         logger.info("正在计算底牌区域白色占比...")
 
         # 从截图中提取底牌区域图片
