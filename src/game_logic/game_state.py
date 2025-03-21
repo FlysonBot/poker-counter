@@ -18,6 +18,7 @@ from image_processing import (
 )
 from logger import logger
 from regions import CardRegion, LandlordLocation, Region
+from regions.region_state import RegionState
 
 
 class GameState:
@@ -45,6 +46,7 @@ class GameState:
         self.game_end_marker = Region(*REGIONS["three_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
+        self.my_cards_region.state = RegionState.ACTIVE
         self._reset_flag = False  # 通过窗口手动重置的标记
 
         logger.success("所有区域初始化完毕")
