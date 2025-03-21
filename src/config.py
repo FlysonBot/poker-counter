@@ -11,7 +11,7 @@ def load_config(file_path: str):
 
 
 # 从 YAML 文件中加载配置
-config = load_config("config.yaml")
+config = load_config("src/config.yaml")
 
 # 提取配置项
 REGIONS = config["REGIONS"]
@@ -19,6 +19,7 @@ THRESHOLDS = config["THRESHOLDS"]
 SCREENSHOT_INTERVAL = config["SCREENSHOT_INTERVAL"]
 GUI_UPDATE_INTERVAL = config["GUI_UPDATE_INTERVAL"]
 GAME_START_INTERVAL = config["GAME_START_INTERVAL"]
+GUI_LOCATION = config["GUI_LOCATION"]
 FONT_SIZE = config["FONT_SIZE"]
 LOG_LEVEL = config["LOG_LEVEL"]
 LOG_RETENTION = config["LOG_RETENTION"]
