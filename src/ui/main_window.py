@@ -26,9 +26,9 @@ class MainWindow(tk.Tk):
         super().__init__()
         self.counter = counter
         self.gs = gs
+        self._create_table()
         self._setup_window()
         self._setup_binding()
-        self._create_table()
         logger.success("主界面初始化完毕")
 
     def _setup_window(self) -> None:
@@ -68,6 +68,7 @@ class MainWindow(tk.Tk):
 
         self.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
         logger.info(f"窗口偏移量为：{x_offset}，{y_offset}")
+        logger.info(f"窗口大小为：{window_width}，{window_height}")
 
         logger.success("窗口属性设置完毕")
 
@@ -107,8 +108,9 @@ class MainWindow(tk.Tk):
                 fg="black",
                 highlightbackground="red",
                 highlightthickness=1,
+                width=2,
             )
-            label.grid(row=0, column=idx, padx=0, pady=0)
+            label.grid(row=0, column=idx, padx=0, pady=0, sticky="nsew")
             self.card_labels[card] = label
 
         # 数量标签
@@ -123,9 +125,14 @@ class MainWindow(tk.Tk):
                 fg="black",
                 highlightbackground="red",
                 highlightthickness=1,
+                width=2,
             )
-            label.grid(row=1, column=idx, padx=0, pady=0)
+            label.grid(row=1, column=idx, padx=0, pady=0, sticky="nsew")
             self.count_labels[card] = label
+
+        # 设置每一列的权重，确保列宽一致
+        for col in range(len(self.counter.INITIAL_COUNTS)):
+            self.table_frame.grid_columnconfigure(col, weight=1)
 
         logger.success("窗口记牌器表格创建完毕")
 
