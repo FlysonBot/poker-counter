@@ -42,18 +42,18 @@ class GameState:
             "right": Region(*REGIONS["remaining_cards_right"]),
         }
 
-        self.game_end_marker = Region(*REGIONS["3_displayed_cards"])
+        self.game_end_marker = Region(*REGIONS["three_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
 
         self._reset_flag = False  # 通过窗口手动重置的标记
 
         logger.success("所有区域初始化完毕")
-    
+
     def manual_reset(self) -> None:
         """
         手动重置记牌器。
         """
-        
+
         self._reset_flag = True
 
     def get_screenshot(self) -> GrayscaleImage:
