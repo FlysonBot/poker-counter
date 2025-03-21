@@ -11,25 +11,24 @@ from game_logic import CardCounter, GameState
 from logger import logger
 
 
-class MainWindow(tk.Toplevel):
+class MainWindow(tk.Tk):
     """
     主界面组件类，显示记牌器的实时信息。
     """
 
-    def __init__(self, master: tk.Tk, counter: CardCounter, gs: GameState) -> None:
+    def __init__(self, counter: CardCounter, gs: GameState) -> None:
         """
         初始化主界面组件。
 
-        :param master: 父窗口
         :param counter: 记牌器对象
+        :param gs: 游戏状态对象
         """
-        super().__init__(master)
-        self.root = master
+        super().__init__()
         self.counter = counter
+        self.gs = gs
         self._setup_window()
         self._setup_binding()
         self._create_table()
-        self.gs = gs
         logger.success("主界面初始化完毕")
 
     def _setup_window(self) -> None:
@@ -40,19 +39,19 @@ class MainWindow(tk.Toplevel):
         self.title("记牌器")
         self.attributes("-topmost", True)  # 置顶  # type: ignore
         self.overrideredirect(True)  # 去掉窗口边框
-        self.root.configure(bg="white")  # 窗口背景设为白色
-        self.root.attributes(  # type: ignore
+        self.configure(bg="white")  # 窗口背景设为白色
+        self.attributes(  # type: ignore
             "-transparentcolor", "white"
         )  # 使白色背景变得透明
 
         # 设置窗口大小并读取窗口偏移量设置
-        self.root.update_idletasks()  # 动态调整窗口大小以匹配内容大小
+        self.update_idletasks()  # 动态调整窗口大小以匹配内容大小
         initial_x_offset = GUI_LOCATION.get("OFFSET_X", None)  # 初始X偏移量
         initial_y_offset = GUI_LOCATION.get("OFFSET_Y", None)  # 初始Y偏移量
         center_x_offset = GUI_LOCATION.get("CENTER_X", None)  # 中心X偏移量
-        center_y_offset = GUI_LOCATION.get("CENTER_X", None)  # 中心Y偏移量
-        window_width = self.root.winfo_width()  # 窗口宽度
-        window_height = self.root.winfo_height()  # 窗口高度
+        center_y_offset = GUI_LOCATION.get("CENTER_Y", None)  # 中心Y偏移量
+        window_width = self.winfo_width()  # 窗口宽度
+        window_height = self.winfo_height()  # 窗口高度
 
         # 计算并应用窗口偏移量
         x_offset, y_offset = 0, 0  # 设置初始偏移量为0
@@ -67,7 +66,7 @@ class MainWindow(tk.Toplevel):
         elif center_y_offset:
             y_offset += center_y_offset - window_height // 2
 
-        self.root.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
+        self.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
         logger.info(f"窗口偏移量为：{x_offset}，{y_offset}")
 
         logger.success("窗口属性设置完毕")
@@ -77,11 +76,11 @@ class MainWindow(tk.Toplevel):
         绑定窗口拖动事件和键盘热键。
         """
         # 绑定窗口拖动事件
-        self.bind("<Button-1>", self._on_drag_start)  # type: ignore
-        self.bind("<B1-Motion>", self._on_drag_move)  # type: ignore
+        self.bind("<Button-1>", self._on_drag_start)  # 鼠标左键按下  # type: ignore
+        self.bind("<B1-Motion>", self._on_drag_move)  # 鼠标左键拖动  # type: ignore
 
         # 绑定键盘热键
-        self.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按下q键退出程序
+        self.bind("<KeyPress-q>", lambda event: self.destroy())  # 按下q键退出程序
         self.bind(
             "<KeyPress-r>", lambda event: self.gs.manual_reset()
         )  # 按下r键手动重置记牌器
@@ -92,7 +91,6 @@ class MainWindow(tk.Toplevel):
         """
         创建记牌器表格，显示牌型和数量。
         """
-
         # 牌型显示表格
         self.table_frame = ttk.Frame(self)
         self.table_frame.pack(padx=0, pady=0)

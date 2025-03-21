@@ -2,7 +2,6 @@
 主程序入口模块，负责启动应用程序、运行后端代码，并初始化记牌器界面。
 """
 
-import tkinter as tk
 from threading import Thread
 
 from config import GUI_UPDATE_INTERVAL
@@ -16,12 +15,6 @@ UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 if __name__ == "__main__":
     logger.success("应用程序已启动")
 
-    # 创建应用
-    root = tk.Tk()
-
-    # 绑定后端错误处理函数
-    logger.add(lambda message: backend_error_handler(root, message), level="ERROR")
-
     # 初始化记牌器和游戏状态
     counter = CardCounter()
     gs = GameState()
@@ -31,8 +24,11 @@ if __name__ == "__main__":
     thread.start()
     logger.success("后端代码成功在第二线程运行")
 
-    # 创建窗口
-    window = MainWindow(root, counter, gs)
+    # 创建主窗口
+    window = MainWindow(counter, gs)
+
+    # 绑定后端错误处理函数
+    logger.add(lambda message: backend_error_handler(window, message), level="ERROR")
 
     # 更新窗口内容
     def update_window() -> None:
@@ -40,7 +36,9 @@ if __name__ == "__main__":
         定时更新记牌器界面显示内容。
         """
         window.update_display()
-        root.after(UPDATE_INTERVAL, update_window)  # 定时更新界面
+        window.after(UPDATE_INTERVAL, update_window)  # 定时更新界面
+
+    update_window()  # 启动更新循环
 
     # 保持程序运行
-    root.mainloop()
+    window.mainloop()
