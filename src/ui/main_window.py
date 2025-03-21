@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Dict
+from typing import Dict
 
 from config import FONT_SIZE, GUI_LOCATION
 from game_logic import CardCounter, GameState
@@ -41,7 +41,9 @@ class MainWindow(tk.Toplevel):
         self.attributes("-topmost", True)  # 置顶  # type: ignore
         self.overrideredirect(True)  # 去掉窗口边框
         self.root.configure(bg="white")  # 窗口背景设为白色
-        self.root.attributes("-transparentcolor", "white")  # 使白色背景变得透明  # type: ignore
+        self.root.attributes(  # type: ignore
+            "-transparentcolor", "white"
+        )  # 使白色背景变得透明
 
         # 设置窗口大小并读取窗口偏移量设置
         self.root.update_idletasks()  # 动态调整窗口大小以匹配内容大小
@@ -75,12 +77,14 @@ class MainWindow(tk.Toplevel):
         绑定窗口拖动事件和键盘热键。
         """
         # 绑定窗口拖动事件
-        self.bind("<Button-1>", self._on_drag_start)
-        self.bind("<B1-Motion>", self._on_drag_move)
+        self.bind("<Button-1>", self._on_drag_start)  # type: ignore
+        self.bind("<B1-Motion>", self._on_drag_move)  # type: ignore
 
         # 绑定键盘热键
         self.bind("<KeyPress-q>", lambda event: self.root.destroy())  # 按下q键退出程序
-        self.bind("<KeyPress-r>", lambda event: self.gs.manual_reset())  # 按下r键手动重置记牌器
+        self.bind(
+            "<KeyPress-r>", lambda event: self.gs.manual_reset()
+        )  # 按下r键手动重置记牌器
 
         logger.success("窗口键盘和鼠标事件绑定成功")
 
@@ -124,10 +128,10 @@ class MainWindow(tk.Toplevel):
             )
             label.grid(row=1, column=idx, padx=0, pady=0)
             self.count_labels[card] = label
-        
+
         logger.success("窗口记牌器表格创建完毕")
 
-    def _on_drag_start(self, event: tk.Event[Any]) -> None:
+    def _on_drag_start(self, event: tk.Event) -> None:  # type: ignore
         """
         记录拖动起始位置。
 
@@ -136,7 +140,7 @@ class MainWindow(tk.Toplevel):
         self._drag_start_x = event.x
         self._drag_start_y = event.y
 
-    def _on_drag_move(self, event: tk.Event[Any]) -> None:
+    def _on_drag_move(self, event: tk.Event) -> None:  # type: ignore
         """
         处理窗口拖动。
 
@@ -145,7 +149,7 @@ class MainWindow(tk.Toplevel):
         x = self.winfo_x() + (event.x - self._drag_start_x)
         y = self.winfo_y() + (event.y - self._drag_start_y)
         self.geometry(f"+{x}+{y}")
-    
+
     def update_display(self) -> None:
         """
         更新窗口的显示内容。
