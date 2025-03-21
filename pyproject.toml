@@ -1,7 +1,16 @@
 [project]
 name = "poker-counter"
 version = "0.1.0"
-description = "Add your description here"
+description = "一个适用于中游（中国游戏）里的普通54张牌斗地主的记牌器。"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: Chinese (Simplified)",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Board Games",
+]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
