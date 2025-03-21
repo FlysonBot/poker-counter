@@ -14,7 +14,6 @@ from image_processing import (
     GrayscaleImage,
     MatchResult,
     best_template_match,
-    color_percentage,
 )
 from logger import logger
 from regions import CardRegion, LandlordLocation, Region
@@ -43,10 +42,11 @@ class GameState:
             "right": Region(*REGIONS["remaining_cards_right"]),
         }
 
-        self.game_end_marker = Region(*REGIONS["three_displayed_cards"])
+        self.game_end_marker = CardRegion(*REGIONS["three_displayed_cards"])
         self.my_cards_region = CardRegion(*REGIONS["my_cards"])
-
+        self.game_end_marker.state = RegionState.ACTIVE
         self.my_cards_region.state = RegionState.ACTIVE
+
         self._reset_flag = False  # 通过窗口手动重置的标记
 
         logger.success("所有区域初始化完毕")
@@ -166,15 +166,10 @@ class GameState:
             self._reset_flag = False
             return True
 
-        logger.trace("正在计算底牌区域白色占比...")
+        logger.trace("正在识别底牌区域的牌...")
 
-        # 从截图中提取底牌区域图片
-        self.game_end_marker.capture(screenshot)
+        self.game_end_marker.capture(screenshot)  # 从截图中提取底牌区域图片
+        cards = self.game_end_marker.recognize_cards()  # 识牌
+        logger.trace(f"底牌区域的牌为：{cards}")
 
-        # 计算白色在图片中的占比
-        percentage: float = color_percentage(
-            self.game_end_marker.region_screenshot, (255, 255, 255)
-        )
-        logger.trace(f"底牌区域白色占比为 {percentage}")
-
-        return percentage > THRESHOLDS["end-game"]
+        return len(cards) > 0

@@ -9,7 +9,7 @@ REGIONS:
   remaining_cards_left: [[20, 555], [85, 580]]  # 左边剩余牌数显示区域
   remaining_cards_middle: [[765, 900], [830, 930]]  # 中间剩余牌数显示区域
   remaining_cards_right: [[1310, 555], [1380, 580]]  # 右边剩余牌数显示区域
-  three_displayed_cards: [[540, 120], [860, 140]]  # 游戏结束时上方三张底牌的显示区域
+  three_displayed_cards: [[520, 110], [830, 190]]  # 游戏结束时上方三张底牌（或一张）的显示区域
 
 THRESHOLDS:
   # 模板匹配阈值
