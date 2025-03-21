@@ -4,7 +4,7 @@
 
 from pathlib import Path
 
-from PIL import Image
+from cv2 import imread
 
 from exceptions import TemplateLoadingError
 from logger import logger
@@ -29,7 +29,7 @@ def load_template(template: str) -> GrayscaleImage:
         logger.error(f"模板缺失: {template_path}")
         raise TemplateLoadingError(str(template_path))
 
-    img: GrayscaleImage = Image.open(template_path).convert("L")  # type: ignore
+    img: GrayscaleImage = imread(str(template_path), 0)  # type: ignore
     if img is None:
         logger.error(f"模板图片无效或无法访问: {template_path}")
         raise TemplateLoadingError(str(template_path))
@@ -69,7 +69,7 @@ CARD_TEMPLATE_NAMES: set[str] = {
     "K",
     "A",
     "2",
-    "王",
+    "JOKER",
 }
 
 

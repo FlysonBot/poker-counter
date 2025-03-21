@@ -39,7 +39,7 @@ class CardCounter:
         """
         重置计数器，将牌数恢复为初始值。
         """
-        
+
         self.counts: dict[str, int] = self.INITIAL_COUNTS.copy()
         logger.success("记牌器状态已还原")
 
@@ -49,6 +49,9 @@ class CardCounter:
 
         :param card: 已出的牌
         """
+
+        if card == "JOKER":
+            card = "王"
 
         if self.counts.get(card, 0) > 0:
             self.counts[card] -= 1
