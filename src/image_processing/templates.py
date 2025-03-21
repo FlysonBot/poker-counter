@@ -4,14 +4,14 @@
 
 from pathlib import Path
 
-from cv2 import imread
+from PIL import Image
 
 from exceptions import TemplateLoadingError
 from logger import logger
 
 from .image_types import GrayscaleImage
 
-TEMPLATE_DIR = Path("templates")
+TEMPLATE_DIR = Path("src/templates")
 
 
 def load_template(template: str) -> GrayscaleImage:
@@ -29,7 +29,7 @@ def load_template(template: str) -> GrayscaleImage:
         logger.error(f"模板缺失: {template_path}")
         raise TemplateLoadingError(str(template_path))
 
-    img: GrayscaleImage = imread(str(template_path), 0)  # type: ignore
+    img: GrayscaleImage = Image.open(template_path).convert("L")  # type: ignore
     if img is None:
         logger.error(f"模板图片无效或无法访问: {template_path}")
         raise TemplateLoadingError(str(template_path))
