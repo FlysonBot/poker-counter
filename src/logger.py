@@ -36,7 +36,13 @@ def handle_exception(
         logger.info("用户手动结束了进程")
         sys.exit(0)  # 退出进程
 
-    logger.critical("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))  # type: ignore
+    # Format the traceback into a string
+    formatted_traceback = "".join(  # type: ignore
+        traceback.format_exception(exc_type, exc_value, exc_traceback)  # type: ignore
+    )
+
+    # Log the critical error with the formatted traceback
+    logger.critical("未处理的异常:\n" + formatted_traceback)
 
 
 sys.excepthook = handle_exception  # 替换默认的异常处理函数
