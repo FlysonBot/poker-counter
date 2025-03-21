@@ -6,8 +6,8 @@ from pathlib import Path
 
 from cv2 import imread
 
-from exceptions import TemplateLoadingError
 from logger import logger
+from misc.exceptions import TemplateLoadingError
 
 from .image_types import GrayscaleImage
 

@@ -9,6 +9,7 @@ import numpy as np
 
 from .image_types import AnyImage, RGB
 
+
 def color_percentage(
     image: AnyImage, target_color: Union[RGB, int], tolerance: int = 30
 ) -> float:

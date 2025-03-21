@@ -9,6 +9,7 @@ from typing import Dict
 from config import FONT_SIZE, GUI_LOCATION
 from game_logic import CardCounter, GameState
 from logger import logger, open_latest_log
+from misc import open_config
 
 
 class MainWindow(tk.Tk):
@@ -83,6 +84,7 @@ class MainWindow(tk.Tk):
         # 绑定键盘热键
         self.bind("<KeyPress-q>", lambda event: self.destroy())  # q键退出应用程序
         self.bind("<KeyPress-l>", lambda event: open_latest_log())  # l键打开日志文件
+        self.bind("<KeyPress-c>", lambda event: open_config())  # c键打开配置文件
         self.bind("<KeyPress-r>", lambda event: self.gs.manual_reset())  # r键重置记牌器
 
         logger.success("窗口键盘和鼠标事件绑定成功")

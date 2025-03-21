@@ -2,7 +2,6 @@
 增强型日志记录模块，提供日志记录功能，支持文件和控制台输出。
 """
 
-import os
 import sys
 import traceback
 from pathlib import Path
@@ -13,30 +12,7 @@ from typing import NoReturn
 from loguru import logger
 
 from config import LOG_LEVEL
-
-
-def open_latest_log() -> None:
-    """
-    打开日志文件。
-    """
-    # 尝试打开最新的日志文件
-    try:
-        logfiles = [
-            filename
-            for filename in os.listdir(gettempdir())
-            if filename.startswith("poker-counter_") and filename.endswith(".log")
-        ]
-        latest_logfile = sorted(logfiles)[-1]
-        log_path = os.path.join(gettempdir(), latest_logfile)
-        os.startfile(log_path)
-
-    # 日志文件打开失败
-    except Exception:
-        logger.error("日志文件打开失败。")
-        messagebox.showerror(  # type: ignore
-            "错误",
-            f"日志文件打开失败，请手动查看日志文件。日志目录：{gettempdir()}",
-        )
+from misc import open_latest_log
 
 
 def handle_exception(

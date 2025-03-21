@@ -4,9 +4,9 @@
 
 from typing import Tuple
 
-from exceptions import ScreenshotError
 from image_processing import AnyImage
 from logger import logger
+from misc.exceptions import ScreenshotError
 from regions.region_state import RegionState
 
 Coordinate = Tuple[int, int]
@@ -34,7 +34,7 @@ class Region:
 
         logger.debug(f"初始化区域：{top_left} -> {bottom_right}")
 
-    def capture(self, image: AnyImage) -> None:
+    def capture(self, image: AnyImage) -> None:  # type: ignore
         """
         从图像中截取区域。
 
