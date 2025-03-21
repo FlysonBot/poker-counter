@@ -3,8 +3,14 @@
 """
 
 from config import THRESHOLDS
-from image_processing import MARKS, color_percentage, identify_cards, template_match
+from image_processing import (
+    MARKS,
+    best_template_match,
+    color_percentage,
+    identify_cards,
+)
 from logger import logger
+
 from .region import Region
 from .region_state import RegionState
 
@@ -20,10 +26,8 @@ class CardRegion(Region):
         """
 
         # 先检查是否为PASS状态
-        confidences, _ = template_match(
-            self.region_screenshot, MARKS["PASS"], THRESHOLDS["pass"]
-        )
-        if confidences:
+        confidences, _ = best_template_match(self.region_screenshot, MARKS["PASS"])
+        if confidences > THRESHOLDS["pass"]:
             self.state = RegionState.PASS
             logger.debug("更新区域状态为: PASS")
             return
@@ -47,7 +51,7 @@ class CardRegion(Region):
 
         :return: 识别出的牌及其数量的字典
         """
-        
+
         if self.state != RegionState.ACTIVE:
             logger.warning("尝试在非活跃区域（出了牌的区域）进行识牌")
             return {}
