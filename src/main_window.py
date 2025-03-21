@@ -8,7 +8,7 @@ from typing import Dict
 
 from config import FONT_SIZE, GUI_LOCATION
 from game_logic import CardCounter, GameState
-from logger import logger
+from logger import logger, open_latest_log
 
 
 class MainWindow(tk.Tk):
@@ -81,10 +81,9 @@ class MainWindow(tk.Tk):
         self.bind("<B1-Motion>", self._on_drag_move)  # 鼠标左键拖动  # type: ignore
 
         # 绑定键盘热键
-        self.bind("<KeyPress-q>", lambda event: self.destroy())  # 按下q键退出程序
-        self.bind(
-            "<KeyPress-r>", lambda event: self.gs.manual_reset()
-        )  # 按下r键手动重置记牌器
+        self.bind("<KeyPress-q>", lambda event: self.destroy())  # q键退出应用程序
+        self.bind("<KeyPress-l>", lambda event: open_latest_log())  # l键打开日志文件
+        self.bind("<KeyPress-r>", lambda event: self.gs.manual_reset())  # r键重置记牌器
 
         logger.success("窗口键盘和鼠标事件绑定成功")
 
