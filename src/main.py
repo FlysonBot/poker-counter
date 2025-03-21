@@ -7,7 +7,7 @@ from threading import Thread
 from config import GUI_UPDATE_INTERVAL
 from game_logic import CardCounter, GameState, backend_logic
 from logger import logger
-from ui import MainWindow, backend_error_handler
+from main_window import MainWindow
 
 UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 
@@ -19,16 +19,13 @@ if __name__ == "__main__":
     counter = CardCounter()
     gs = GameState()
 
+    # 创建主窗口
+    window = MainWindow(counter, gs)
+
     # 第二线程运行后端循环代码
     thread = Thread(target=backend_logic, args=(counter, gs), daemon=True)
     thread.start()
     logger.success("后端代码成功在第二线程运行")
-
-    # 创建主窗口
-    window = MainWindow(counter, gs)
-
-    # 绑定后端错误处理函数
-    logger.add(lambda message: backend_error_handler(window, message), level="ERROR")
 
     # 更新窗口内容
     def update_window() -> None:
