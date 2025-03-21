@@ -56,5 +56,4 @@ class CardRegion(Region):
             logger.warning("尝试在非活跃区域（出了牌的区域）进行识牌")
             return {}
 
-        self.capture(self.region_screenshot)
         return identify_cards(self.region_screenshot, THRESHOLDS["card"])

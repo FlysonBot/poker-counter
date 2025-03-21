@@ -5,9 +5,9 @@
 from typing import Tuple
 
 from exceptions import ScreenshotError
+from image_processing import AnyImage
 from logger import logger
 from regions.region_state import RegionState
-from image_processing import AnyImage
 
 Coordinate = Tuple[int, int]
 
@@ -45,6 +45,7 @@ class Region:
         region_screenshot: AnyImage = image[y1:y2, x1:x2]
         if region_screenshot.size == 0:
             raise ScreenshotError(
-                f"无效区域截图：{self.top_left} -> {self.bottom_right}"
+                f"无效区域截图：{self.top_left} -> {self.bottom_right}\n"
+                f"提供的图像大小为：{image.size}"
             )
         self.region_screenshot: AnyImage = region_screenshot
