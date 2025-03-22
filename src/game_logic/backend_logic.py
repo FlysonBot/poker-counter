@@ -22,7 +22,7 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
     :param counter: 记牌器对象
     """
 
-    def mark_cards(cards: dict[str, int]) -> None:
+    def mark_cards(cards: dict[str, int], player: str) -> None:
         """
         标记已出的牌。
 
@@ -30,7 +30,7 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
         """
         for card, count in cards.items():
             for _ in range(count):
-                counter.mark(card)
+                counter.mark(card, player)
                 logger.info(f"已标记 {card}")
 
     logger.trace("开始后端循环代码")
@@ -39,16 +39,7 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
         while True:
             # 初始化游戏状态
             counter.reset()
-
-            # 等待游戏开始
-            while not gs.is_game_started(gs.get_screenshot()):
-                logger.trace("正在等待游戏开始...")
-                sleep(GAME_START_INTERVAL)
-            logger.info("游戏开始")
-
-            # 初始化地主
-            landlord: LandlordLocation = gs.find_landlord_location(gs.get_screenshot())
-            logger.info(f"地主是{landlord.name}")
+            player_cycle = cycle(["left", "myself", "right"])
             region_cycle = cycle(
                 [
                     gs.card_regions["left"],
@@ -56,18 +47,30 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
                     gs.card_regions["right"],
                 ]
             )
+
+            # 等待游戏开始
+            while not gs.is_game_started(gs.get_screenshot()):
+                logger.trace("正在等待游戏开始...")
+                sleep(GAME_START_INTERVAL)
+            logger.info("游戏开始")
+
+            # 初始化循环
+            landlord: LandlordLocation = gs.find_landlord_location(gs.get_screenshot())
+            logger.info(f"地主是{landlord.name}")
+
             for _ in range(landlord.value):
                 next(region_cycle)
+                next(player_cycle)
+
+            current_region: Region = next(region_cycle)
+            current_player = next(player_cycle)
 
             # 获取截图
             screenshot = gs.get_screenshot()
-            current_region: Region = next(region_cycle)
-            current_region.is_landlord = True  # 标记地主区域
 
-            # 初始化自身
-            gs.card_regions["middle"].is_me = True
+            # 记自己的牌
             gs.my_cards_region.capture(gs.get_screenshot())
-            mark_cards(gs.get_my_cards())
+            mark_cards(gs.get_my_cards(), "myself")
 
             # 实时记录
             while not gs.is_game_ended(screenshot):
@@ -83,15 +86,16 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
                 # 如果区域有牌，并且不是自己，则识别并标记牌
                 if (
                     current_region.state == RegionState.ACTIVE
-                    and not current_region.is_me
+                    and not current_player == "myself"
                 ):
                     cards = current_region.recognize_cards()
                     logger.info(f"识别到已出牌：{cards}")
-                    mark_cards(cards)
+                    mark_cards(cards, current_player)
 
                 elif current_region.state == RegionState.PASS:
                     logger.info("玩家选择不出牌")
 
                 # 并更新截图及当前区域
                 current_region = next(region_cycle)
+                current_player = next(player_cycle)
                 logger.trace("跳到下一个区域")

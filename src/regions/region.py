@@ -29,9 +29,6 @@ class Region:
         self.bottom_right = bottom_right
         self.state = RegionState.WAIT
 
-        self.is_landlord = False
-        self.is_me = False
-
         logger.debug(f"初始化区域：{top_left} -> {bottom_right}")
 
     def capture(self, image: AnyImage) -> None:  # type: ignore
