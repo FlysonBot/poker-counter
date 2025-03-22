@@ -28,6 +28,8 @@ GAME_START_INTERVAL: 1  # 等待下一次判断游戏开始时的间隔
 GUI:
   MAIN:  # 主窗口
     DISPLAY: True  # 是否显示
+    OPACITY: 1  # 不透明度（0是完全透明，1是不透明）
+    FONT_SIZE: 25  # 标签字体大小
     # OFFSET_X: 0  # 左上角起始X坐标
     OFFSET_Y: 0  # 左上角起始Y坐标
     CENTER_X: 700  # 中心X坐标
@@ -35,6 +37,8 @@ GUI:
 
   LEFT:  # 左窗口
     DISPLAY: True  # 是否显示
+    OPACITY: 0.9  # 不透明度（0是完全透明，1是不透明）
+    FONT_SIZE: 18  # 标签字体大小
     OFFSET_X: 113  # 左上角起始X坐标
     # OFFSET_Y: 0  # 左上角起始Y坐标
     # CENTER_X: 0  # 中心X坐标
@@ -42,12 +46,13 @@ GUI:
 
   RIGHT:  # 右窗口
     DISPLAY: True  # 是否显示
+    OPACITY: 0.9  # 不透明度（0是完全透明，1是不透明）
+    FONT_SIZE: 18  # 标签字体大小
     OFFSET_X: 1193  # 左上角起始X坐标
     # OFFSET_Y: 0  # 左上角起始Y坐标
     # CENTER_X: 0  # 中心X坐标
     CENTER_Y: 456  # 中心Y坐标
 
 # 其他参数
-FONT_SIZE: 25  # 标签字体大小
 LOG_LEVEL: DEBUG  # 日志记录级别（TRACE、DEBUG、INFO、SUCCESS、WARNING、ERROR、CRITICAL）
 LOG_RETENTION: 3  # 日志保留数量

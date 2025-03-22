@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable, Dict, Optional
 
-from config import FONT_SIZE, GUI
+from config import GUI
 from game_logic import CardCounter, GameState
 from logger import logger, open_latest_log
 from misc.open_file import open_config
@@ -48,9 +48,9 @@ class CounterWindow(tk.Toplevel):
         }
         self._get_count_text = get_count[self.window_type.name]
 
-        self._create_table()
-        self._setup_window()
-        self._setup_binding()
+        self._create_table()  # 创建表格（先创建表格后创建窗口以动态调整窗口大小）
+        self._setup_window()  # 设置窗口属性
+        self._setup_binding()  # 绑定窗口拖动事件
 
         logger.success(f"{window_type.value}窗口初始化完毕")
 
@@ -70,6 +70,9 @@ class CounterWindow(tk.Toplevel):
 
         # 设置窗口大小并读取窗口偏移量设置
         self.update_idletasks()  # 动态调整窗口大小以匹配内容大小
+
+        # 根据窗口透明度设置透明度
+        self.attributes("-alpha", GUI.get(self.window_type.name, {}).get("OPACITY", 1))  # type: ignore
 
         # 根据窗口类型获取不同的位置配置
         location_config = GUI.get(self.window_type.name, {})
@@ -148,6 +151,7 @@ class CounterWindow(tk.Toplevel):
         # 初始化标签
         self.card_labels: Dict[str, tk.Label] = {}  # 牌名标签
         self.count_labels: Dict[str, tk.Label] = {}  # 数量标签
+        FONT_SIZE = GUI.get(self.window_type.name, {}).get("FONT_SIZE", 25)
 
         for idx, card in enumerate(self.counter.KEYS):
             # 创建牌名标签
