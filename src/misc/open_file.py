@@ -1,3 +1,7 @@
+"""
+文件打开模块，定义打开文件的函数。
+"""
+
 import os
 from tempfile import gettempdir
 from tkinter import messagebox

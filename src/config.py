@@ -6,6 +6,13 @@ import yaml
 
 
 def load_config(file_path: str):
+    """
+    从 YAML 文件中加载配置。
+
+    :param file_path: 配置文件路径
+    :return: 配置字典
+    """
+
     with open(file_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
