@@ -45,6 +45,8 @@ class SimpleCounter:
         if new_count < 0:
             logger.warning(f"尝试标记不存在的牌型或已出完的牌：{item}")
 
+        self._counts[item] = new_count
+
     def get_count(self, item: str) -> int:
         """
         获取指定牌型的当前计数。
