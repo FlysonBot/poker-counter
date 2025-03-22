@@ -11,7 +11,7 @@ from misc.exceptions import TemplateLoadingError
 
 from .image_types import GrayscaleImage
 
-TEMPLATE_DIR = Path("src/templates")
+TEMPLATE_DIR: Path = Path(__file__).parent.parent / "templates"
 
 
 def load_template(template: str) -> GrayscaleImage:

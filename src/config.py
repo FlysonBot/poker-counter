@@ -2,10 +2,12 @@
 应用程序配置模块，读取包含游戏区域坐标、模板匹配阈值，和日志路径在内等配置。
 """
 
+from pathlib import Path
+
 import yaml
 
 
-def load_config(file_path: str):
+def load_config(file_path: Path):
     """
     从 YAML 文件中加载配置。
 
@@ -18,7 +20,7 @@ def load_config(file_path: str):
 
 
 # 从 YAML 文件中加载配置
-config = load_config("src/config.yaml")
+config = load_config(Path(__file__).parent / "config.yaml")
 
 # 提取配置项
 REGIONS = config["REGIONS"]
