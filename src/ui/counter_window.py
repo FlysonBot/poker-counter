@@ -228,5 +228,13 @@ class CounterWindow(tk.Toplevel):
         """
 
         for card, label in self.count_labels.items():
-            label.config(text=self._get_count_text(card))
+            count = self._get_count_text(card)
+            label.config(text=count)
+
+            if self.window_type != WindowsType.MAIN:
+                if count > 1:
+                    label.config(fg="red")
+                else:
+                    label.config(fg="black")
+
         logger.trace(f"{self.window_type.value}窗口内容更新完毕")
