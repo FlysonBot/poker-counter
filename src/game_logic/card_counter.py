@@ -25,8 +25,8 @@ class CardCounter:
         self.remaining_counter = SimpleCounter(self.FULL_COUNTS, lambda x: x - 1)
 
         self.player_counters: dict[str, SimpleCounter] = {
-            "left": SimpleCounter(self.EMPTY_COUNTS, lambda x: x - 1),
-            "right": SimpleCounter(self.EMPTY_COUNTS, lambda x: x - 1),
+            "left": SimpleCounter(self.EMPTY_COUNTS, lambda x: x + 1),
+            "right": SimpleCounter(self.EMPTY_COUNTS, lambda x: x + 1),
         }
 
         logger.success("记牌器初始化成功")

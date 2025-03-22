@@ -73,6 +73,7 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
             mark_cards(gs.get_my_cards(), "myself")
 
             # 实时记录
+            logger.trace("现在是地主区域")
             while not gs.is_game_ended(screenshot):
                 screenshot: GrayscaleImage = gs.get_screenshot()  # 更新截图
                 current_region.capture(screenshot)  # 更新当前出牌区域截图
