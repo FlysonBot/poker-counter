@@ -99,7 +99,7 @@ class MainWindow(tk.Tk):
 
         # 牌名标签
         self.card_labels: Dict[str, tk.Label] = {}
-        for idx, card in enumerate(self.counter.INITIAL_COUNTS.keys()):
+        for idx, card in enumerate(self.counter.KEYS):
             label = tk.Label(
                 self.table_frame,
                 text=card,
@@ -117,10 +117,10 @@ class MainWindow(tk.Tk):
 
         # 数量标签
         self.count_labels: Dict[str, tk.Label] = {}
-        for idx, card in enumerate(self.counter.INITIAL_COUNTS.keys()):
+        for idx, card in enumerate(self.counter.KEYS):
             label = tk.Label(
                 self.table_frame,
-                text=str(self.counter.get_count(card)),
+                text=str(self.counter.get_remaining_count(card)),
                 anchor="center",
                 relief="solid",
                 font=("Arial", FONT_SIZE),
@@ -134,7 +134,7 @@ class MainWindow(tk.Tk):
             self.count_labels[card] = label
 
         # 设置每一列的权重，确保列宽一致
-        for col in range(len(self.counter.INITIAL_COUNTS)):
+        for col in range(len(self.counter.KEYS)):
             self.table_frame.grid_columnconfigure(col, weight=1)
 
         logger.success("窗口记牌器表格创建完毕")
@@ -163,5 +163,5 @@ class MainWindow(tk.Tk):
         更新窗口的显示内容。
         """
         for card, label in self.count_labels.items():
-            label.config(text=str(self.counter.get_count(card)))
+            label.config(text=str(self.counter.get_remaining_count(card)))
         logger.trace("窗口内容更新完毕")
