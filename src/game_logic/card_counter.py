@@ -12,7 +12,7 @@ class CardCounter:
     牌数统计器类，跟踪剩余牌的数量。
     """
 
-    KEYS = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "王"}
+    KEYS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2", "王"]
     FULL_COUNTS = {key: 4 for key in KEYS}
     FULL_COUNTS["王"] = 2
     EMPTY_COUNTS = {key: 0 for key in KEYS}
