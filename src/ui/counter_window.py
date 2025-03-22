@@ -10,6 +10,7 @@ from config import GUI
 from game_logic import CardCounter, GameState
 from logger import logger, open_latest_log
 from misc.open_file import open_config
+from misc.windows_offset import calculate_offset
 
 from .windows_type import WindowsType
 
@@ -76,26 +77,17 @@ class CounterWindow(tk.Toplevel):
 
         # 根据窗口类型获取不同的位置配置
         location_config = GUI.get(self.window_type.name, {})
-        initial_x_offset = location_config.get("OFFSET_X", None)
-        initial_y_offset = location_config.get("OFFSET_Y", None)
-        center_x_offset = location_config.get("CENTER_X", None)
-        center_y_offset = location_config.get("CENTER_Y", None)
-
         window_width = self.winfo_width()
         window_height = self.winfo_height()
 
-        # 计算并应用窗口偏移量
-        x_offset, y_offset = 0, 0
-
-        if initial_x_offset is not None:
-            x_offset += initial_x_offset
-        elif center_x_offset is not None:
-            x_offset += center_x_offset - window_width // 2
-
-        if initial_y_offset is not None:
-            y_offset += initial_y_offset
-        elif center_y_offset is not None:
-            y_offset += center_y_offset - window_height // 2
+        x_offset, y_offset = calculate_offset(
+            window_width,
+            window_height,
+            location_config.get("OFFSET_X", None),
+            location_config.get("OFFSET_Y", None),
+            location_config.get("CENTER_X", None),
+            location_config.get("CENTER_Y", None),
+        )
 
         self.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
         logger.info(f"{self.window_type.value}窗口偏移量为：{x_offset}，{y_offset}")
@@ -123,7 +115,9 @@ class CounterWindow(tk.Toplevel):
         logger.success(f"{self.window_type.value}窗口键盘和鼠标事件绑定成功")
 
     def destroy_all(self) -> None:
-        """摧毁所有窗口"""
+        """
+        摧毁所有窗口（包括开关窗口），并退出程序。
+        """
 
         if self.parent is not None:
             if hasattr(self.parent, "destroy_all"):
@@ -228,13 +222,15 @@ class CounterWindow(tk.Toplevel):
         """
 
         for card, label in self.count_labels.items():
-            count = self._get_count_text(card)
-            label.config(text=count)
+            # 仅在标签存在时更新标签，避免窗口关闭后尝试更新标签
+            if label.winfo_exists():
+                count = self._get_count_text(card)
+                label.config(text=str(count))
 
-            if self.window_type != WindowsType.MAIN:
-                if count > 1:
-                    label.config(fg="red")
-                else:
-                    label.config(fg="black")
+                if self.window_type != WindowsType.MAIN:
+                    if count > 1:
+                        label.config(fg="red")
+                    else:
+                        label.config(fg="black")
 
         logger.trace(f"{self.window_type.value}窗口内容更新完毕")

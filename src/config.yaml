@@ -52,7 +52,14 @@ GUI:
     # OFFSET_Y: 0  # 左上角起始Y坐标
     # CENTER_X: 0  # 中心X坐标
     CENTER_Y: 456  # 中心Y坐标
+  
+  SWITCH:  # 开关窗口
+    FONT_SIZE: 25  # 标签字体大小
+    OFFSET_X: 1200  # 左上角起始X坐标
+    OFFSET_Y: 0  # 左上角起始Y坐标
+    # CENTER_X: 0  # 中心X坐标
+    # CENTER_Y: 0  # 中心Y坐标
 
 # 其他参数
-LOG_LEVEL: DEBUG  # 日志记录级别（TRACE、DEBUG、INFO、SUCCESS、WARNING、ERROR、CRITICAL）
+LOG_LEVEL: INFO  # 日志记录级别（TRACE、DEBUG、INFO、SUCCESS、WARNING、ERROR、CRITICAL）
 LOG_RETENTION: 3  # 日志保留数量

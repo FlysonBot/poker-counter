@@ -3,8 +3,8 @@
 """
 
 from itertools import cycle
+from threading import Event
 from time import sleep
-from typing import NoReturn
 
 from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from image_processing import GrayscaleImage
@@ -15,11 +15,12 @@ from .card_counter import CardCounter
 from .game_state import GameState
 
 
-def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
+def backend_logic(counter: CardCounter, gs: GameState, stop_event: Event) -> None:
     """
     后端逻辑主函数，负责监控游戏状态并更新记牌器。
 
     :param counter: 记牌器对象
+    :param stop_event: 停止事件
     """
 
     def mark_cards(cards: dict[str, int], player: str) -> None:
@@ -33,10 +34,23 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
                 counter.mark(card, player)
                 logger.info(f"已标记 {card}")
 
+    def check_stop_event() -> bool:
+        """
+        检查停止事件。
+
+        :return: 停止事件是否被设置
+        """
+
+        if stop_event.is_set():
+            logger.info("后端线程已被命令停止")
+            return True
+
+        return False
+
     logger.trace("开始后端循环代码")
 
     with logger.catch():  # 让日志记录器捕获所有错误
-        while True:
+        while not check_stop_event():
             # 初始化游戏状态
             counter.reset()
             player_cycle = cycle(["left", "myself", "right"])
@@ -50,6 +64,8 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
 
             # 等待游戏开始
             while not gs.is_game_started(gs.get_screenshot()):
+                if check_stop_event():
+                    return  # noqa: E701
                 logger.trace("正在等待游戏开始...")
                 sleep(GAME_START_INTERVAL)
             logger.info("游戏开始")
@@ -66,6 +82,8 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
             current_player = next(player_cycle)
 
             # 获取截图
+            if check_stop_event():
+                return  # noqa: E701
             screenshot = gs.get_screenshot()
 
             # 记自己的牌
@@ -74,7 +92,7 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
 
             # 实时记录
             logger.trace("现在是地主区域")
-            while not gs.is_game_ended(screenshot):
+            while not gs.is_game_ended(screenshot) and not check_stop_event():
                 screenshot: GrayscaleImage = gs.get_screenshot()  # 更新截图
                 current_region.capture(screenshot)  # 更新当前出牌区域截图
                 current_region.update_state()  # 更新当前出牌区域状态
@@ -100,3 +118,6 @@ def backend_logic(counter: CardCounter, gs: GameState) -> NoReturn:
                 current_region = next(region_cycle)
                 current_player = next(player_cycle)
                 logger.trace("跳到下一个区域")
+
+    if not stop_event.is_set():
+        logger.error("后端线程意外终止")
