@@ -25,11 +25,27 @@ GUI_UPDATE_INTERVAL: 0.2  # 画面更新间隔
 GAME_START_INTERVAL: 1  # 等待下一次判断游戏开始时的间隔
 
 # 记牌器窗口默认显示位置坐标(OFFSET和CENTER二选一)
-GUI_LOCATION:
-  # "OFFSET_X": 0  # 左上角起始X坐标
-  OFFSET_Y: 0  # 左上角起始Y坐标
-  CENTER_X: 700  # 中心X坐标
-  # "CENTER_Y": 0  # 中心Y坐标
+GUI:
+  MAIN:  # 主窗口
+    DISPLAY: True  # 是否显示
+    # OFFSET_X: 0  # 左上角起始X坐标
+    OFFSET_Y: 0  # 左上角起始Y坐标
+    CENTER_X: 700  # 中心X坐标
+    # CENTER_Y: 0  # 中心Y坐标
+
+  LEFT:  # 左窗口
+    DISPLAY: True  # 是否显示
+    OFFSET_X: 113  # 左上角起始X坐标
+    # OFFSET_Y: 0  # 左上角起始Y坐标
+    # CENTER_X: 0  # 中心X坐标
+    CENTER_Y: 456  # 中心Y坐标
+
+  RIGHT:  # 右窗口
+    DISPLAY: True  # 是否显示
+    OFFSET_X: 1193  # 左上角起始X坐标
+    # OFFSET_Y: 0  # 左上角起始Y坐标
+    # CENTER_X: 0  # 中心X坐标
+    CENTER_Y: 456  # 中心Y坐标
 
 # 其他参数
 FONT_SIZE: 25  # 标签字体大小
