@@ -9,7 +9,7 @@ from typing import Dict
 from config import FONT_SIZE, GUI_LOCATION
 from game_logic import CardCounter, GameState
 from logger import logger, open_latest_log
-from misc import open_config
+from misc.open_file import open_config
 
 
 class MainWindow(tk.Tk):

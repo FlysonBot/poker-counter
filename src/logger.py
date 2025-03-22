@@ -12,7 +12,7 @@ from typing import NoReturn
 from loguru import logger
 
 from config import LOG_LEVEL
-from misc import open_latest_log
+from misc.open_file import open_latest_log
 
 
 def handle_exception(

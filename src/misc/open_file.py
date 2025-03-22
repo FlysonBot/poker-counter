@@ -2,7 +2,7 @@ import os
 from tempfile import gettempdir
 from tkinter import messagebox
 
-from logger import logger
+from loguru import logger
 
 
 def open_file(filepath: str, what_file: str) -> None:
