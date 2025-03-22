@@ -56,9 +56,28 @@ class MasterWindow(tk.Tk):
         )  # 使白色背景变得透明
 
         # 创建开关按钮
-        self.switch = tk.Button(self, text="打开记牌器", command=self._turn_on_program)
+        font_size: int = GUI.get("SWITCH", {}).get("FONT_SIZE", 16)
+        self.switch = tk.Button(
+            self,
+            text="打开记牌器",
+            command=self._turn_on_program,
+            width=10,
+            font=(None, font_size),  # type: ignore
+        )
         self.switch.pack(padx=0, pady=0)
-        self.update_idletasks()  # 动态调整窗口大小以匹配内容大小
+
+        # 创建退出按钮
+        self.exit = tk.Button(
+            self,
+            text="退出程序",
+            command=self.destroy,
+            width=10,
+            font=(None, font_size),  # type: ignore
+        )
+        self.exit.pack(padx=0, pady=0)
+
+        # 动态调整窗口大小以匹配内容大小
+        self.update_idletasks()  # 刷新窗口大小
 
         # 设置窗口偏移量
         location_config = GUI.get("SWITCH", {})
