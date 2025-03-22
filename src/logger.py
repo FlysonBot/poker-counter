@@ -56,7 +56,7 @@ def backend_error_handler(message: str) -> NoReturn:
         open_latest_log()
 
     # 退出程序
-    exit(1)
+    sys.exit(1)
 
 
 logger.remove(0)  # 移除默认日志记录器
