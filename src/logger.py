@@ -59,8 +59,9 @@ def backend_error_handler(message: str) -> NoReturn:
     sys.exit(1)
 
 
-logger.remove(0)  # 移除默认日志记录器
-logger.add(sys.stderr, level=LOG_LEVEL)  # 控制台输出
+if len(logger._core.handlers) > 0:  # type: ignore
+    logger.remove(0)  # 移除默认日志记录器
+    logger.add(sys.stderr, level=LOG_LEVEL)  # 控制台输出
 logger.add(
     Path(gettempdir()) / "poker-counter_{time:YYYY-MM-DD_HH-mm-ss}.log",
     level=LOG_LEVEL,
