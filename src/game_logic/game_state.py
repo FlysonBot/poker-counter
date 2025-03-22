@@ -12,7 +12,6 @@ from config import REGIONS, THRESHOLDS
 from image_processing import (
     MARKS,
     GrayscaleImage,
-    MatchResult,
     best_template_match,
 )
 from logger import logger
@@ -93,7 +92,7 @@ class GameState:
 
         return cards
 
-    def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[MatchResult]:
+    def _find_landlord_mark(self, screenshot: GrayscaleImage) -> list[float]:
         """
         寻找地主标记。
 
@@ -107,11 +106,15 @@ class GameState:
         regions = self.landlord_marker.values()
         list(map(lambda region: region.capture(screenshot), regions))
 
-        # 匹配并获取匹配结果置信度和位置
-        return [
-            best_template_match(region.region_screenshot, MARKS["Landlord"])
-            for region in regions
-        ]
+        # 匹配并获取匹配结果置信度
+        results = map(
+            lambda region: best_template_match(
+                region.region_screenshot, MARKS["Landlord"]
+            ),
+            regions,
+        )
+
+        return [result[0] for result in results]
 
     def is_game_started(self, screenshot: GrayscaleImage) -> bool:
         """
@@ -121,12 +124,12 @@ class GameState:
         :return: 游戏是否开始
         """
 
-        confidences, _ = zip(*self._find_landlord_mark(screenshot))
+        confidences = self._find_landlord_mark(screenshot)
 
-        confidence: float = max(confidences)
-        logger.trace(f"地主标记匹配置信度为：{confidence}")
+        max_confidence: float = max(confidences)
+        logger.trace(f"地主标记匹配置信度为：{max_confidence}")
 
-        return confidence >= THRESHOLDS["landlord"]
+        return max_confidence >= THRESHOLDS["landlord"]
 
     def find_landlord_location(self, screenshot: GrayscaleImage) -> LandlordLocation:
         """
@@ -136,19 +139,20 @@ class GameState:
         :return: 地主位置
         """
 
-        # 找到置信度/匹配度最高地主标记的x坐标
-        best_match_x: int = max(
-            self._find_landlord_mark(screenshot),
-            key=lambda x: x[0],  # 取置信度最高的
-        )[1][1]  # 取结果中位置的x坐标
+        logger.debug("正在确定地主位置...")
+        logger.debug(self._find_landlord_mark(screenshot))
 
-        logger.debug(f"地主标记x坐标为 {best_match_x}")
+        # 计算地主标记的匹配置信度
+        confidences = self._find_landlord_mark(screenshot)
+        max_confidence = max(confidences)
+        max_index = confidences.index(max_confidence)
+        logger.debug(f"地主标记匹配置信度为：{max_confidence}")
 
-        # 判断地主是谁（通过比较各区域左上角的x坐标）
-        if best_match_x < REGIONS["remaining_cards_middle"][0][0]:
+        # 根据匹配区域的位置判断地主是谁
+        if max_index == 0:
             logger.info("地主是上家")
             return LandlordLocation.LEFT
-        if best_match_x < REGIONS["remaining_cards_right"][0][0]:
+        if max_index == 1:
             logger.info("地主是自己")
             return LandlordLocation.MIDDLE
         logger.info("地主是下家")
