@@ -41,16 +41,16 @@ class CounterWindow(tk.Toplevel):
         self.gs = gs
         self.window_type = window_type
 
-        self._create_table()
-        self._setup_window()
-        self._setup_binding()
-
         get_count: dict[str, Callable[[str], int]] = {
             "MAIN": lambda card: self.counter.get_remaining_count(card),
             "LEFT": lambda card: self.counter.get_player_count(card, "left"),
             "RIGHT": lambda card: self.counter.get_player_count(card, "right"),
         }
         self._get_count_text = get_count[self.window_type.name]
+
+        self._create_table()
+        self._setup_window()
+        self._setup_binding()
 
         logger.success(f"{window_type.value}窗口初始化完毕")
 
