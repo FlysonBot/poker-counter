@@ -21,7 +21,7 @@ class MasterWindow(tk.Tk):
     主界面组件类，显示记牌器的实时信息。
     """
 
-    def __init__(self, counter: CardCounter, gs: GameState) -> None:
+    def __init__(self) -> None:
         """
         初始化主界面组件。
 
@@ -31,8 +31,8 @@ class MasterWindow(tk.Tk):
         super().__init__()
 
         # 初始化对象
-        self.counter = counter
-        self.gs = gs
+        self.counter = CardCounter()
+        self.gs = GameState()
         self.windows: list[CounterWindow] = []
         self.program_started = False
 
@@ -142,7 +142,6 @@ class MasterWindow(tk.Tk):
         self.switch.config(text="关闭记牌器", command=self._turn_off_program)
 
         logger.success("记牌器成功打开")
-        self.update_display()  # 启动更新循环
 
     def _turn_off_program(self) -> None:
         """
@@ -164,15 +163,3 @@ class MasterWindow(tk.Tk):
 
         self.program_started = False
         logger.success("记牌器成功关闭")
-
-    def update_display(self) -> None:
-        """
-        更新所有窗口的显示内容。
-        """
-
-        for window in self.windows:
-            window.update_display()
-
-        # 定时更新窗口内容
-        if self.program_started:
-            self.after(UPDATE_INTERVAL, self.update_display)  # 定时更新窗口内容

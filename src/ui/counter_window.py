@@ -42,13 +42,6 @@ class CounterWindow(tk.Toplevel):
         self.gs = gs
         self.window_type = window_type
 
-        get_count: dict[str, Callable[[str], int]] = {
-            "MAIN": lambda card: self.counter.get_remaining_count(card),
-            "LEFT": lambda card: self.counter.get_player_count(card, "left"),
-            "RIGHT": lambda card: self.counter.get_player_count(card, "right"),
-        }
-        self._get_count_text = get_count[self.window_type.name]
-
         self._create_table()  # 创建表格（先创建表格后创建窗口以动态调整窗口大小）
         self._setup_window()  # 设置窗口属性
         self._setup_binding()  # 绑定窗口拖动事件
@@ -142,6 +135,14 @@ class CounterWindow(tk.Toplevel):
             self.table_frame.pack(padx=0, pady=0, fill="both", expand=True)
             rows, cols = len(self.counter.KEYS), 2  # 垂直布局
 
+        # 获取牌数的函数
+        get_count: dict[str, Callable[[str], tk.Variable]] = {
+            "MAIN": lambda card: self.counter.get_remaining_count(card),
+            "LEFT": lambda card: self.counter.get_player_count(card, "left"),
+            "RIGHT": lambda card: self.counter.get_player_count(card, "right"),
+        }
+        self._get_count_text = get_count[self.window_type.name]
+
         # 初始化标签
         self.card_labels: Dict[str, tk.Label] = {}  # 牌名标签
         self.count_labels: Dict[str, tk.Label] = {}  # 数量标签
@@ -165,7 +166,7 @@ class CounterWindow(tk.Toplevel):
             # 创建数量标签
             count_label = tk.Label(
                 self.table_frame,
-                text=self._get_count_text(card),
+                textvariable=self._get_count_text(card),
                 anchor="center",
                 relief="solid",
                 font=("Arial", FONT_SIZE, "bold"),
@@ -215,22 +216,3 @@ class CounterWindow(tk.Toplevel):
         x = self.winfo_x() + (event.x - self._drag_start_x)
         y = self.winfo_y() + (event.y - self._drag_start_y)
         self.geometry(f"+{x}+{y}")
-
-    def update_display(self) -> None:
-        """
-        更新窗口的显示内容。
-        """
-
-        for card, label in self.count_labels.items():
-            # 仅在标签存在时更新标签，避免窗口关闭后尝试更新标签
-            if label.winfo_exists():
-                count = self._get_count_text(card)
-                label.config(text=str(count))
-
-                if self.window_type != WindowsType.MAIN:
-                    if count > 1:
-                        label.config(fg="red")
-                    else:
-                        label.config(fg="black")
-
-        logger.trace(f"{self.window_type.value}窗口内容更新完毕")

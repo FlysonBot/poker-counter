@@ -2,9 +2,11 @@
 牌数统计器模块，负责跟踪剩余牌的数量。
 """
 
+import tkinter as tk
+
 from logger import logger
 
-from .simple_counter import SimpleCounter
+from .tkinter_counter import TkinterCounter
 
 
 class CardCounter:
@@ -22,11 +24,11 @@ class CardCounter:
         初始化记牌器，重置牌数为初始值。
         """
 
-        self.remaining_counter = SimpleCounter(self.FULL_COUNTS, lambda x: x - 1)
+        self.remaining_counter = TkinterCounter(self.FULL_COUNTS, lambda x: x - 1)
 
-        self.player_counters: dict[str, SimpleCounter] = {
-            "left": SimpleCounter(self.EMPTY_COUNTS, lambda x: x + 1),
-            "right": SimpleCounter(self.EMPTY_COUNTS, lambda x: x + 1),
+        self.player_counters: dict[str, TkinterCounter] = {
+            "left": TkinterCounter(self.EMPTY_COUNTS, lambda x: x + 1),
+            "right": TkinterCounter(self.EMPTY_COUNTS, lambda x: x + 1),
         }
 
         logger.success("记牌器初始化成功")
@@ -56,27 +58,27 @@ class CardCounter:
         if player != "myself":
             self.player_counters[player].count(card)
 
-        logger.debug(
-            f"为 {player} 标记牌：{card} (剩余：{self.remaining_counter.get_count(card)})"
+        logger.info(
+            f"为 {player} 标记牌：{card} (剩余：{self.remaining_counter.get_count(card).get()})"
         )
 
-    def get_remaining_count(self, card: str) -> int:
+    def get_remaining_count(self, card: str) -> tk.IntVar:
         """
         获取指定牌的剩余数量。
 
         :param card: 牌名
-        :return: 牌的剩余数量
+        :return: 牌的剩余数量Tkinter变量
         """
 
         return self.remaining_counter.get_count(card)
 
-    def get_player_count(self, card: str, player: str) -> int:
+    def get_player_count(self, card: str, player: str) -> tk.IntVar:
         """
         获取指定牌的指定玩家的计数。
 
         :param card: 牌名
         :param player: 玩家名
-        :return: 牌的指定玩家的计数
+        :return: 牌的指定玩家的计数Tkinter变量
         """
 
         return self.player_counters[player].get_count(card)

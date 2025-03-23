@@ -32,7 +32,6 @@ def backend_logic(counter: CardCounter, gs: GameState, stop_event: Event) -> Non
         for card, count in cards.items():
             for _ in range(count):
                 counter.mark(card, player)
-                logger.info(f"已标记 {card}")
 
     def check_stop_event() -> bool:
         """
