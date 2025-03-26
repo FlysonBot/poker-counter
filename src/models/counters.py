@@ -7,18 +7,18 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from misc.custom_types import CardDict, CardVarDict
+from misc.custom_types import CardIntDict, CardIntVarDict
 from misc.singleton import singleton
 
 from .enum import Card, Player
 
 
-def _create_cardvar_dict(initial_value: CardDict) -> CardVarDict:
+def _create_cardintvar_dict(initial_value: CardIntDict) -> CardIntVarDict:
     """根据提供的初始值字典创建一个Tkinter变量字典"""
     return {key: tk.IntVar(value=value) for key, value in initial_value.items()}
 
 
-def _modify_cardvar_dict(intvar_dict: CardVarDict, new_values: CardDict) -> None:
+def _modify_cardvar_dict(intvar_dict: CardIntVarDict, new_values: CardIntDict) -> None:
     """根据提供的新值字典修改Tkinter变量字典"""
     for key, value in new_values.items():
         intvar_dict[key].set(value)
@@ -34,9 +34,9 @@ EMPTY_COUNT = {card: 0 for card in Card}
 class CardCounter:
     """牌数统计器类，负责跟踪剩余牌和已出牌的数量"""
 
-    remaining_counter = _create_cardvar_dict(FULL_COUNT)
-    player1_counter = _create_cardvar_dict(EMPTY_COUNT)
-    player2_counter = _create_cardvar_dict(EMPTY_COUNT)
+    remaining_counter = _create_cardintvar_dict(FULL_COUNT)
+    player1_counter = _create_cardintvar_dict(EMPTY_COUNT)
+    player2_counter = _create_cardintvar_dict(EMPTY_COUNT)
 
     def reset(self) -> None:
         """重置记牌器计数为初始值"""

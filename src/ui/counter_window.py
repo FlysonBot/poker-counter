@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable, Dict
+from typing import Any, Callable, Dict
 
 from functions.windows_offset import calculate_offset
 from misc.custom_types import ConfigDict
@@ -13,6 +13,7 @@ from misc.open_file import open_config
 from models.config import GUI
 from models.counters import CardCounter
 from models.enum import Card, WindowsType
+from models.labels import text_color
 
 
 class CounterWindow(tk.Toplevel):
@@ -31,12 +32,13 @@ class CounterWindow(tk.Toplevel):
         """
         super().__init__(parent) if parent else super().__init__()
 
-        self.parent = parent
-        self.window_type = window_type
+        self.PARENT = parent
+        self.WINDOW_TYPE = window_type
 
-        config = GUI.get(self.window_type.name, {})
+        config = GUI.get(self.WINDOW_TYPE.name, {})
 
-        self._create_table()
+        self._create_table()  # 需要先创建表格才能正确地获取窗口大小
+        self._bind_label_style()
         self._setup_window_style(config)
         self._setup_window_position(config)
         self._setup_binding()
@@ -45,7 +47,7 @@ class CounterWindow(tk.Toplevel):
 
     def _setup_window_style(self, config: ConfigDict) -> None:
         """设置窗口样式"""
-        self.title(f"记牌器-{self.window_type.value}")
+        self.title(f"记牌器-{self.WINDOW_TYPE.value}")
         self.attributes("-topmost", True)  # 置顶  # type: ignore
         self.overrideredirect(True)  # 去掉窗口边框
         self.configure(bg="white")  # 窗口背景设为白色
@@ -72,7 +74,7 @@ class CounterWindow(tk.Toplevel):
             config.get("CENTER_Y", None),
         )
 
-        window_name = self.window_type.value
+        window_name = self.WINDOW_TYPE.value
         self.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
         logger.info(f"{window_name}窗口偏移量为：{x_offset}，{y_offset}")
         logger.info(f"{window_name}窗口大小为：{window_width}x{window_height}")
@@ -85,86 +87,85 @@ class CounterWindow(tk.Toplevel):
         self.bind("<B1-Motion>", self._on_drag_move)  # 鼠标左键拖动  # type: ignore
 
         self.bind(
-            "<KeyPress-q>", lambda event: self.parent.destroy()
+            "<KeyPress-q>", lambda event: self.PARENT.destroy()
         )  # q键退出应用程序
         self.bind("<KeyPress-l>", lambda event: open_latest_log())  # l键打开日志文件
         self.bind("<KeyPress-c>", lambda event: open_config())  # c键打开配置文件
 
-        logger.success(f"{self.window_type.value}窗口键盘和鼠标事件绑定成功")
+        logger.success(f"{self.WINDOW_TYPE.value}窗口键盘和鼠标事件绑定成功")
 
     def _create_table(self) -> None:
         """创建记牌器表格，显示牌型和数量"""
-        self.table_frame = ttk.Frame(self)
+        self._table_frame = ttk.Frame(self)
 
         # 根据窗口类型决定表格方向
-        if self.window_type == WindowsType.MAIN:
-            self.table_frame.pack(padx=0, pady=0)
+        if self.WINDOW_TYPE == WindowsType.MAIN:
+            self._table_frame.pack(padx=0, pady=0)
             rows, cols = 2, len(Card)  # 水平布局
         else:
-            self.table_frame.pack(padx=0, pady=0, fill="both", expand=True)
+            self._table_frame.pack(padx=0, pady=0, fill="both", expand=True)
             rows, cols = len(Card), 2  # 垂直布局
 
         # 获取牌数的函数
         counter = CardCounter()  # 获取全局记牌器实例
-        get_count: dict[str, Callable[[Card], tk.Variable]] = {
-            "MAIN": lambda card: counter.remaining_counter[card],
-            "LEFT": lambda card: counter.player1_counter[card],
-            "RIGHT": lambda card: counter.player2_counter[card],
+        get_count: dict[WindowsType, Callable[[Card], tk.Variable]] = {
+            WindowsType.MAIN: lambda card: counter.remaining_counter[card],
+            WindowsType.LEFT: lambda card: counter.player1_counter[card],
+            WindowsType.RIGHT: lambda card: counter.player2_counter[card],
         }
-        self._get_count_text = get_count[self.window_type.name]
+        get_count_text = get_count[self.WINDOW_TYPE]
 
         # 初始化标签
-        self.card_labels: Dict[Card, tk.Label] = {}  # 牌名标签
-        self.count_labels: Dict[Card, tk.Label] = {}  # 数量标签
-        FONT_SIZE = GUI.get(self.window_type.name, {}).get("FONT_SIZE", 25)
+        self._card_labels: Dict[Card, tk.Label] = {}  # 牌名标签
+        self._count_labels: Dict[Card, tk.Label] = {}  # 数量标签
+        FONT_SIZE = GUI.get(self.WINDOW_TYPE.name, {}).get("FONT_SIZE", 25)
 
-        for idx, card in enumerate(Card):
-            # 创建牌名标签
-            card_label = tk.Label(
-                self.table_frame,
-                text=card.value,
+        # 创建标签
+        def create_label(**kwargs: Any) -> tk.Label:
+            return tk.Label(
+                self._table_frame,
                 anchor="center",
                 relief="solid",
                 font=("Arial", FONT_SIZE),
-                bg="lightblue",
-                fg="black",
                 highlightbackground="red",
                 highlightthickness=1,
                 width=2,
+                **kwargs,
             )
 
-            # 创建数量标签
-            count_label = tk.Label(
-                self.table_frame,
-                textvariable=self._get_count_text(card),
-                anchor="center",
-                relief="solid",
-                font=("Arial", FONT_SIZE, "bold"),
-                bg="lightyellow",
-                fg="black",
-                highlightbackground="red",
-                highlightthickness=1,
-                width=2,
+        for idx, card in enumerate(Card):
+            card_label = create_label(text=card.value, bg="lightblue", fg="black")
+            count_label = create_label(
+                textvariable=get_count_text(card), bg="lightyellow", fg="black"
             )
 
             # 根据窗口类型放置标签
-            if self.window_type == WindowsType.MAIN:
+            if self.WINDOW_TYPE == WindowsType.MAIN:
                 card_label.grid(row=0, column=idx, padx=0, pady=0, sticky="nsew")
                 count_label.grid(row=1, column=idx, padx=0, pady=0, sticky="nsew")
             else:
                 card_label.grid(row=idx, column=0, padx=0, pady=0, sticky="nsew")
                 count_label.grid(row=idx, column=1, padx=0, pady=0, sticky="nsew")
 
-            self.card_labels[card] = card_label
-            self.count_labels[card] = count_label
+            self._card_labels[card] = card_label
+            self._count_labels[card] = count_label
 
         # 设置网格权重，确保列宽/行高一致
         for i in range(rows):
-            self.table_frame.grid_rowconfigure(i, weight=1)
+            self._table_frame.grid_rowconfigure(i, weight=1)
         for j in range(cols):
-            self.table_frame.grid_columnconfigure(j, weight=1)
+            self._table_frame.grid_columnconfigure(j, weight=1)
 
-        logger.success(f"{self.window_type.value}窗口记牌器表格创建完毕")
+        logger.success(f"{self.WINDOW_TYPE.value}窗口记牌器表格创建完毕")
+
+    def _bind_label_style(self) -> None:
+        """绑定标签样式更新函数到标签样式变量类"""
+        for card, label in self._count_labels.items():
+            text_color.bind_callback(
+                self.WINDOW_TYPE,
+                card,
+                lambda style, label=label: (label.config(fg=style), None)[1],
+            )
 
     def _on_drag_start(self, event: tk.Event) -> None:  # type: ignore
         """记录拖动起始位置。

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from loguru import logger
 
 from functions.match_template import MARK_TEMPLATES, best_template_match
-from misc.custom_types import CardDict
+from misc.custom_types import CardIntDict
 from misc.singleton import singleton
 from models.config import REGIONS, THRESHOLDS
 from models.enum import Mark, Player, RegionState
@@ -37,7 +37,7 @@ class GameState:
     """游戏状态类，负责监控游戏状态并识别牌局中的牌"""
 
     @property
-    def my_cards(self) -> CardDict:
+    def my_cards(self) -> CardIntDict:
         """识别并返回自己的牌"""
         return my_cards_region.recognize_cards()
 

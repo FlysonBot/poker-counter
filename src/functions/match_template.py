@@ -3,7 +3,6 @@
 """
 
 from pathlib import Path
-from typing import NoReturn
 
 import cv2
 import numpy as np
@@ -12,7 +11,7 @@ from loguru import logger
 from misc.custom_types import (
     AnyEnum,
     AnyImage,
-    CardDict,
+    CardIntDict,
     EnumTemplateDict,
     GrayscaleImage,
     MatchResult,
@@ -22,7 +21,7 @@ from models.enum import Card, Mark
 TEMPLATE_DIR: Path = Path(__file__).parent.parent / "templates"
 
 
-def _load_template(template_path: Path) -> AnyImage | NoReturn:
+def _load_template(template_path: Path) -> AnyImage:
     """加载模板图像。
     :param template_path: 模板图像路径
     :return: 模板图像
@@ -30,12 +29,11 @@ def _load_template(template_path: Path) -> AnyImage | NoReturn:
     logger.trace(f"尝试加载模板: {template_path.stem}")
     image: GrayscaleImage = cv2.imread(str(template_path), 0)  # type: ignore
 
-    if image is not None:
-        return image
     if not template_path.exists():
         logger.error(f"模板缺失: {template_path}")
     if image is None:
         logger.error(f"模板图片无效或无法访问: {template_path}")
+    return image
 
 
 def _load_enum_templates(enum: type[AnyEnum]) -> EnumTemplateDict[AnyEnum]:
@@ -85,7 +83,7 @@ def best_template_match(target: AnyImage, template: AnyImage) -> MatchResult:
     return max_val, (max_loc[0], max_loc[1])
 
 
-def identify_cards(image: AnyImage, threshold: float) -> CardDict:
+def identify_cards(image: AnyImage, threshold: float) -> CardIntDict:
     """识别图像中的所有扑克牌。
     :param image: 输入图像
     :param threshold: 匹配阈值

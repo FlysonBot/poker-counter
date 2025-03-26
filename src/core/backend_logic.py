@@ -8,12 +8,13 @@ from time import sleep
 
 from loguru import logger
 
-from misc.custom_types import CardDict
+from misc.custom_types import CardIntDict
 from misc.singleton import singleton
 from models.config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from models.counters import CardCounter
-from models.enum import Player, RegionState
+from models.enum import Card, Player, RegionState, WindowsType
 from models.game_state import GameState, card_regions
+from models.labels import text_color
 from models.screenshot import screenshot
 
 
@@ -30,11 +31,23 @@ class BackendLogic:
     def _keep_running(self) -> bool:
         return not self._stop_event.is_set()
 
-    def _mark_cards(self, cards: CardDict, player: Player) -> None:
+    def _change_text_to_red(self, card: Card, player: Player) -> None:
+        """更新标签字体为红色"""
+        match player:
+            case Player.LEFT:
+                text_color.change_style(card, WindowsType.LEFT, "red")
+            case Player.RIGHT:
+                text_color.change_style(card, WindowsType.RIGHT, "red")
+            case _:
+                pass
+
+    def _mark_cards(self, cards: CardIntDict, player: Player) -> None:
         """标记已出的牌"""
         for card, count in cards.items():
             for _ in range(count):
                 self._counter.mark(card, player)
+            if count > 1:
+                self._change_text_to_red(card, player)
 
     def _pregame_init(self) -> None:
         """初始化"""

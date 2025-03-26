@@ -8,7 +8,7 @@ from loguru import logger
 
 from functions.color_percentage import color_percentage
 from functions.match_template import MARK_TEMPLATES, best_template_match, identify_cards
-from misc.custom_types import CardDict, GrayscaleImage
+from misc.custom_types import CardIntDict, GrayscaleImage
 from models.config import THRESHOLDS
 
 from .enum import Mark, RegionState
@@ -60,7 +60,7 @@ class Region:
         logger.debug(f"区域背景蓝色占比为: {blue_percentage}")
         return blue_percentage > THRESHOLDS["wait"]
 
-    def recognize_cards(self) -> CardDict:  # type: ignore
+    def recognize_cards(self) -> CardIntDict:  # type: ignore
         """识别区域中的牌"""
         if self.state is not RegionState.ACTIVE:
             logger.warning("尝试在非活跃区域（出了牌的区域）进行识牌")
