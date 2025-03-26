@@ -13,7 +13,7 @@ from misc.singleton import singleton
 from models.config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from models.counters import CardCounter
 from models.game_state import GameState, card_regions
-from models.labels import StringLabelsProperty
+from models.labels import LabelProperties
 from models.screenshot import screenshot
 
 
@@ -24,7 +24,7 @@ class BackendLogic:
     def __init__(self) -> None:
         self._counter = CardCounter()
         self._gs = GameState()
-        self.text_color = StringLabelsProperty({card: "black" for card in Card})
+        self.label_properties = LabelProperties()
 
     def set_stop_event(self, stop_event: Event) -> None:
         self._stop_event = stop_event
@@ -33,28 +33,34 @@ class BackendLogic:
     def _keep_running(self) -> bool:
         return not self._stop_event.is_set()
 
-    def _change_text_to_red(self, card: Card, player: Player) -> None:
-        """更新标签字体为红色"""
-        match player:
-            case Player.LEFT:
-                self.text_color.change_style(card, WindowsType.LEFT, "red")
-            case Player.RIGHT:
-                self.text_color.change_style(card, WindowsType.RIGHT, "red")
-            case _:
-                pass
+    def _update_text_color(self, card: Card, count: int, player: Player) -> None:
+        """根据条件更新标签字体颜色"""
+        if count > 1:  # 同一牌如果在同一回合内出了多次就改成红色
+            match player:
+                case Player.LEFT:
+                    self.label_properties.text_color.change_style(
+                        card, WindowsType.LEFT, "red"
+                    )
+                case Player.RIGHT:
+                    self.label_properties.text_color.change_style(
+                        card, WindowsType.RIGHT, "red"
+                    )
+                case _:
+                    pass
+        # 不管如何，只要出了牌就把总记牌器标签颜色改成黑色
+        self.label_properties.text_color.change_style(card, WindowsType.MAIN, "black")
 
     def _mark_cards(self, cards: CardIntDict, player: Player) -> None:
         """标记已出的牌"""
         for card, count in cards.items():
+            self._update_text_color(card, count, player)
             for _ in range(count):
                 self._counter.mark(card, player)
-            if count > 1:
-                self._change_text_to_red(card, player)
 
     def _pregame_init(self) -> None:
         """初始化"""
         self._counter.reset()
-        self.text_color.reset()
+        self.label_properties.text_color.reset()
         self._player_cycle = cycle([Player.LEFT, Player.MIDDLE, Player.RIGHT])
         screenshot.update()
 
