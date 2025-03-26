@@ -15,7 +15,6 @@ from models.config import GUI, GUI_UPDATE_INTERVAL
 from .counter_window import CounterWindow
 
 UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
-default_font = tkFont.nametofont("TkDefaultFont").actual("family")
 
 
 class MasterWindow(tk.Tk):
@@ -27,6 +26,7 @@ class MasterWindow(tk.Tk):
         # 初始化对象
         self.windows: list[CounterWindow] = []
         self.backend = BackendThread()
+        self.default_font = tkFont.nametofont("TkDefaultFont").actual("family")
 
         # 初始化窗口
         config = GUI.get("SWITCH", {})
@@ -54,7 +54,7 @@ class MasterWindow(tk.Tk):
             text="打开记牌器",
             command=self._switch_on,
             width=10,
-            font=(default_font, config.get("FONT_SIZE", 16)),
+            font=(self.default_font, config.get("FONT_SIZE", 16)),
         )
         self.switch.pack(padx=0, pady=0)
 
@@ -65,7 +65,7 @@ class MasterWindow(tk.Tk):
             text="退出程序",
             command=self.destroy,
             width=10,
-            font=(default_font, config.get("FONT_SIZE", 16)),
+            font=(self.default_font, config.get("FONT_SIZE", 16)),
         )
         self.exit.pack(padx=0, pady=0)
 
