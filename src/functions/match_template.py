@@ -99,7 +99,5 @@ def identify_cards(image: AnyImage, threshold: float) -> CardIntDict:
         if amount > 0:
             results[card] = amount
             logger.debug(f"检测到 {amount} 张 {card}")
-        else:
-            logger.debug(f"未检测到 {card}，最高置信度为 {max(result[0])}")
 
     return results
