@@ -133,7 +133,8 @@ class CounterWindow(tk.Toplevel):
             )
 
         for idx, card in enumerate(Card):
-            card_label = create_label(text=card.value, bg="lightblue", fg="black")
+            label_text = card.value if card.value != "JOKER" else "王"
+            card_label = create_label(text=label_text, bg="lightblue", fg="black")
             count_label = create_label(
                 textvariable=get_count_text(card), bg="lightyellow", fg="black"
             )
