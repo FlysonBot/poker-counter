@@ -110,7 +110,7 @@ class CounterWindow(tk.Toplevel):
         get_count: dict[WindowsType, Callable[[Card], tk.Variable]] = {
             WindowsType.MAIN: lambda card: counter.remaining_counter[card],
             WindowsType.LEFT: lambda card: counter.player1_counter[card],
-            WindowsType.RIGHT: lambda card: counter.player2_counter[card],
+            WindowsType.RIGHT: lambda card: counter.player3_counter[card],
         }
         get_count_text = get_count[self.WINDOW_TYPE]
 

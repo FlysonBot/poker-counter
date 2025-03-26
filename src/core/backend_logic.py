@@ -16,6 +16,8 @@ from models.game_state import GameState, card_regions
 from models.labels import LabelProperties
 from models.screenshot import screenshot
 
+from .verify_count import GameEndExamination
+
 
 @singleton
 class BackendLogic:
@@ -25,9 +27,11 @@ class BackendLogic:
         self._counter = CardCounter()
         self._gs = GameState()
         self.label_properties = LabelProperties()
+        logger.info("后端逻辑类初始化完毕")
 
     def set_stop_event(self, stop_event: Event) -> None:
         self._stop_event = stop_event
+        logger.info("后端终止事件设置完毕")
 
     @property
     def _keep_running(self) -> bool:
@@ -41,14 +45,21 @@ class BackendLogic:
                     self.label_properties.text_color.change_style(
                         card, WindowsType.LEFT, "red"
                     )
+                    logger.debug(
+                        f"{card.value}出了{count}次，更改上家记牌器标签字体颜色为红色"
+                    )
+                case Player.MIDDLE:  # 自己没有记牌器窗口，不需要改颜色
+                    pass
                 case Player.RIGHT:
                     self.label_properties.text_color.change_style(
                         card, WindowsType.RIGHT, "red"
                     )
-                case _:
-                    pass
+                    logger.debug(
+                        f"{card.value}出了{count}次，更改下家记牌器标签字体颜色为红色"
+                    )
         # 不管如何，只要出了牌就把总记牌器标签颜色改成黑色
         self.label_properties.text_color.change_style(card, WindowsType.MAIN, "black")
+        logger.debug(f"更改主窗口记牌器{card.value}的颜色为黑色")
 
     def _mark_cards(self, cards: CardIntDict, player: Player) -> None:
         """标记已出的牌"""
@@ -63,20 +74,22 @@ class BackendLogic:
         self.label_properties.text_color.reset()
         self._player_cycle = cycle([Player.LEFT, Player.MIDDLE, Player.RIGHT])
         screenshot.update()
+        logger.info("游戏前初始化完成")
 
     def _wait_for_game_start(self) -> None:
         """等待游戏开始"""
+        logger.info("正在等待游戏开始...")
         while not self._gs.is_game_started and self._keep_running:
             screenshot.update()
-            logger.trace("正在等待游戏开始...")
+            logger.debug("正在等待游戏开始...")
             sleep(GAME_START_INTERVAL)
         if self._keep_running:
-            logger.info("游戏开始")
+            logger.info("游戏已开始")
 
     def _find_landlord(self) -> None:
         """找地主"""
         self._landlord = self._gs.landlord_location
-        self._landlord.log_landlord()
+        logger.info("地主是{self._landlord.value}")
 
     def _init_player_cycle(self) -> None:
         """调整玩家循环以使地主变为第一个玩家"""
@@ -86,13 +99,20 @@ class BackendLogic:
 
     def _mark_my_cards(self) -> None:
         """标记自己的牌"""
-        self._mark_cards(self._gs.my_cards, Player.MIDDLE)
+        my_cards = self._gs.my_cards
+        logger.info(f"识别到自己的牌为：{my_cards}")
+        self._mark_cards(my_cards, Player.MIDDLE)
+        self._counter.player2_count = 0  # 重置出牌计数
+
+        expected_card_count = 17 if self._landlord is Player.MIDDLE else 20
+        if sum(my_cards.values()) != expected_card_count:
+            logger.warning(
+                f"自己的牌识别出错，识别到了{sum(my_cards.values())}张牌，但应该识别到{expected_card_count}张牌。"
+                f"自己{'' if self._landlord is Player.MIDDLE else '并不'}是地主。"
+            )
 
     def _should_advance_after_marking(self) -> bool:
         """根据条件标记活跃区域内的牌，返回是否进入下一个区域"""
-        if self._current_player is Player.MIDDLE:
-            return True  # 不标记自己的牌（因为已经标记过了）
-
         cards = card_regions[self._current_player].recognize_cards()
         logger.info(f"识别到已出牌：{cards}")
 
@@ -100,13 +120,14 @@ class BackendLogic:
             self._mark_cards(cards, self._current_player)
             return True
 
-        logger.debug("未识别到牌，继续等待")
+        logger.debug("未识别到任何牌，继续等待。")
         return False
 
     def _should_advance(self) -> bool:
         """每个区域识牌记牌的逻辑，返回是否进入下一个区域"""
         match card_regions[self._current_player].state:
             case RegionState.WAIT:
+                logger.debug("等待玩家出牌中...")
                 sleep(SCREENSHOT_INTERVAL)
                 return False
 
@@ -115,7 +136,12 @@ class BackendLogic:
                 return True
 
             case RegionState.ACTIVE:
+                logger.info("检测到玩家已出牌，正在识别...")
                 return self._should_advance_after_marking()
+
+    def _game_end_self_examination(self) -> None:
+        """游戏结束时进行自检"""
+        GameEndExamination(self._landlord, self._current_player)
 
     def run(self) -> None:
         """后端逻辑主函数，负责监控游戏状态并更新记牌器"""
@@ -128,12 +154,12 @@ class BackendLogic:
                 self._find_landlord()
                 self._init_player_cycle()
                 self._mark_my_cards()
-                self._current_player.log_region()
+                logger.info(f"切换到{self._current_player.value}的区域")
 
                 while self._keep_running and not self._gs.is_game_ended:
                     screenshot.update()
                     card_regions[self._current_player].update_state()
 
-                    if self._should_advance():
+                    if self._should_advance() and not self._gs.is_game_ended:
                         self._current_player = next(self._player_cycle)
-                        self._current_player.log_region()
+                        logger.info(f"切换到{self._current_player.value}的区域")

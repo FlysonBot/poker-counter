@@ -7,7 +7,6 @@ from enum import Enum
 from typing import Any, TypeVar
 
 import numpy as np
-from loguru import logger
 
 
 class Card(Enum):
@@ -50,14 +49,6 @@ class Player(Enum):
     LEFT = "上家"
     MIDDLE = "自己"
     RIGHT = "下家"
-
-    def log_landlord(self) -> None:
-        """记录地主是谁"""
-        logger.info(f"地主是{self.value}")
-
-    def log_region(self) -> None:
-        """记录当前区域是哪个"""
-        logger.info(f"现在跳转到{self.value}的区域")
 
 
 class WindowsType(Enum):

@@ -35,13 +35,23 @@ class CardCounter:
     def __post_init__(self) -> None:
         self.remaining_counter = _create_cardintvar_dict(FULL_COUNT)
         self.player1_counter = _create_cardintvar_dict(EMPTY_COUNT)
-        self.player2_counter = _create_cardintvar_dict(EMPTY_COUNT)
+        self.player3_counter = _create_cardintvar_dict(EMPTY_COUNT)
+        self.remaining_count = 54
+        self.player1_count = 0
+        self.player2_count = 0
+        self.player3_count = 0
+        logger.info("已创建记牌器计数器")
 
     def reset(self) -> None:
         """重置记牌器计数为初始值"""
         _modify_cardvar_dict(self.remaining_counter, FULL_COUNT)
         _modify_cardvar_dict(self.player1_counter, EMPTY_COUNT)
-        _modify_cardvar_dict(self.player2_counter, EMPTY_COUNT)
+        _modify_cardvar_dict(self.player3_counter, EMPTY_COUNT)
+        self.remaining_count = 54
+        self.player1_count = 0
+        self.player2_count = 0
+        self.player3_count = 0
+        logger.info("已重置记牌器计数")
 
     def mark(self, card: Card, player: Player) -> None:
         """标记一个牌型，并更新计数器"""
@@ -50,11 +60,17 @@ class CardCounter:
         match player:
             case Player.LEFT:
                 self.player1_counter[card].set(self.player1_counter[card].get() + 1)
+                self.player1_count += 1
+            case Player.MIDDLE:
+                self.player2_count += 1
             case Player.RIGHT:
-                self.player2_counter[card].set(self.player2_counter[card].get() + 1)
-            case _:
-                pass
+                self.player3_counter[card].set(self.player3_counter[card].get() + 1)
+                self.player2_count += 1
 
         if self.remaining_counter[card].get() < 0:
             logger.warning(f"尝试标记不存在的牌型或已出完的牌：{card.value}")
-        logger.info(f"为 {card.value} 标记牌：{self.remaining_counter[card].get()}")
+
+        self.remaining_count -= 1
+        logger.info(
+            f"为{player.value}标记牌{card.value}，剩余{self.remaining_counter[card].get()}张"
+        )

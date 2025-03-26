@@ -18,7 +18,7 @@ UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 
 
 class MasterWindow(tk.Tk):
-    """顶级窗口。显示开始/关闭和退出按钮，并控制后端"""
+    """顶级窗口；显示开始/关闭和退出按钮，并控制后端"""
 
     def __init__(self) -> None:
         super().__init__()
@@ -108,13 +108,12 @@ class MasterWindow(tk.Tk):
             self.right_window = CounterWindow(WindowsType.RIGHT, self)
             self.windows.append(self.right_window)
 
-        logger.success("所有窗口创建完毕")
+        logger.success("所有记牌器窗口创建完毕")
 
-        # 运行后端循环代码
-        self.backend.start()
-
-        # 更新开关按钮状态
-        self.switch.config(text="关闭记牌器", command=self._switch_off)
+        self.backend.start()  # 运行后端循环代码
+        self.switch.config(
+            text="关闭记牌器", command=self._switch_off
+        )  # 更新开关按钮状态
 
         logger.success("记牌器成功打开")
 

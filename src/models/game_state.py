@@ -28,6 +28,7 @@ landlord_marker: dict[Player, Region] = {
 game_end_marker: Region = Region(*REGIONS["three_displayed_cards"])
 my_cards_region: Region = Region(*REGIONS["my_cards"])
 my_cards_region.state = RegionState.ACTIVE
+logger.success("成功创建所有区域")
 
 
 @singleton
@@ -62,6 +63,7 @@ class GameState:
                 f"游戏未开始。地主标记匹配置信度为：{confidence}，低于阈值：{THRESHOLDS['landlord']}"
             )
             return False
+        logger.info(f"游戏开始。地主标记匹配置信度为：{confidence}")
         return True
 
     @property
@@ -89,5 +91,5 @@ class GameState:
             logger.debug("游戏未结束。底牌区域未识别到牌")
             return False
 
-        logger.debug(f"游戏结束。底牌区域的牌为：{cards}")
+        logger.info(f"游戏结束。底牌区域的牌为：{cards}")
         return True
