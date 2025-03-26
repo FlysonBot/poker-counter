@@ -40,7 +40,8 @@ def _take_screenshot() -> GrayscaleImage:
 class Screenshot:
     """截图类，用于截取屏幕截图并更新当前截图"""
 
-    image: GrayscaleImage = _take_screenshot()
+    def __post_init__(self) -> None:
+        self.update()
 
     def update(self) -> None:
         """更新截图"""
