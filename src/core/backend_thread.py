@@ -20,6 +20,10 @@ class BackendThread:
         self._stop_event = Event()
         self._backend_logic = BackendLogic()
         self._backend_logic.set_stop_event(self._stop_event)
+        self._update_thread()
+
+    def _update_thread(self) -> None:
+        """更新后端线程"""
         self._thread = Thread(target=self._backend_logic.run, daemon=True)
 
     def start(self) -> None:
@@ -35,6 +39,7 @@ class BackendThread:
         if self.is_running:
             self._stop_event.set()
             self._thread.join()
+            self._update_thread()
             return logger.success("后端线程终止成功")
         return logger.warning("后端线程已停止，无需再次终止")
 
