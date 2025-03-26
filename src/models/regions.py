@@ -49,7 +49,7 @@ class Region:
     def _is_pass(self) -> bool:
         confidence = best_template_match(
             self.region_screenshot, MARK_TEMPLATES[Mark.PASS]
-        )
+        )[0]
         logger.debug(f"PASS标记置信度为: {confidence}")
         return confidence > THRESHOLDS["pass"]
 
