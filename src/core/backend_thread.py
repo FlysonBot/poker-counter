@@ -24,11 +24,19 @@ class BackendThread:
     def start(self) -> None:
         """启动后端线程"""
         self._stop_event.clear()
-        self._thread.start()
-        logger.success("后端线程启动成功")
+        if not self.is_running:
+            self._thread.start()
+            return logger.success("后端线程启动成功")
+        return logger.warning("后端线程已在运行中，无需重复启动")
 
     def terminate(self) -> None:
         """由前段调用，终止后端线程"""
-        self._stop_event.set()
-        self._thread.join()
-        logger.success("后端线程终止成功")
+        if self.is_running:
+            self._stop_event.set()
+            self._thread.join()
+            return logger.success("后端线程终止成功")
+        return logger.warning("后端线程已停止，无需再次终止")
+
+    @property
+    def is_running(self) -> bool:
+        return self._thread.is_alive()
