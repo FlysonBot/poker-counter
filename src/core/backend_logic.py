@@ -54,6 +54,7 @@ class BackendLogic:
     def _pregame_init(self) -> None:
         """初始化"""
         self._counter.reset()
+        self.text_color.reset()
         self._player_cycle = cycle([Player.LEFT, Player.MIDDLE, Player.RIGHT])
         screenshot.update()
 
