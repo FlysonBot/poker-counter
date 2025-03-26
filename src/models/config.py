@@ -29,8 +29,7 @@ def current_dir() -> Path:
 
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent
-    else:
-        return Path(__file__).parent
+    return Path(__file__).parent
 
 
 # 从 YAML 文件中加载配置

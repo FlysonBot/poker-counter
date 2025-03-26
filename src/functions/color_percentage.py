@@ -7,7 +7,7 @@ from typing import Union
 import cv2
 import numpy as np
 
-from .image_types import AnyImage, RGB
+from misc.custom_types import RGB, AnyImage
 
 
 def color_percentage(

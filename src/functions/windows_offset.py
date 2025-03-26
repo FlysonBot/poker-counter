@@ -1,3 +1,7 @@
+"""
+窗口偏移量计算模块，负责计算窗口偏移量。
+"""
+
 from typing import Optional
 
 
@@ -9,9 +13,7 @@ def calculate_offset(
     center_x_offset: Optional[int],
     center_y_offset: Optional[int],
 ) -> tuple[int, int]:
-    """
-    计算窗口偏移量。
-
+    """计算窗口偏移量。
     :param windows_width: 窗口宽度
     :param windows_height: 窗口高度
     :param initial_x_offset: 初始化X偏移量

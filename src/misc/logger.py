@@ -11,8 +11,8 @@ from typing import NoReturn
 
 from loguru import logger
 
-from config import LOG_LEVEL
 from misc.open_file import open_latest_log
+from models.config import LOG_LEVEL
 
 
 def handle_exception(

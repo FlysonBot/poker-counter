@@ -2,8 +2,8 @@
 主程序入口模块，负责启动应用程序、运行后端代码，并初始化记牌器界面。
 """
 
-from config import GUI_UPDATE_INTERVAL
-from logger import logger
+from misc.logger import logger
+from models.config import GUI_UPDATE_INTERVAL
 from ui.master_window import MasterWindow
 
 UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
