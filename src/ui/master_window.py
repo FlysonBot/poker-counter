@@ -54,7 +54,7 @@ class MasterWindow(tk.Tk):
             text="打开记牌器",
             command=self._switch_on,
             width=10,
-            font=(self.default_font, config.get("FONT_SIZE", 16)),
+            font=(self.default_font, config.get("FONT_SIZE", 12)),
         )
         self.switch.pack(padx=0, pady=0)
 
@@ -65,7 +65,7 @@ class MasterWindow(tk.Tk):
             text="退出程序",
             command=self.destroy,
             width=10,
-            font=(self.default_font, config.get("FONT_SIZE", 16)),
+            font=(self.default_font, config.get("FONT_SIZE", 12)),
         )
         self.exit.pack(padx=0, pady=0)
 

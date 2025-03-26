@@ -39,16 +39,16 @@ GUI:
     DISPLAY: True  # 是否显示
     OPACITY: 0.9  # 不透明度（0是完全透明，1是不透明）
     FONT_SIZE: 18  # 标签字体大小
-    OFFSET_X: 113  # 左上角起始X坐标
+    # OFFSET_X: 160  # 左上角起始X坐标
     # OFFSET_Y: 0  # 左上角起始Y坐标
-    # CENTER_X: 0  # 中心X坐标
+    CENTER_X: 205  # 中心X坐标
     CENTER_Y: 456  # 中心Y坐标
 
   RIGHT:  # 右窗口
     DISPLAY: True  # 是否显示
     OPACITY: 0.9  # 不透明度（0是完全透明，1是不透明）
     FONT_SIZE: 18  # 标签字体大小
-    OFFSET_X: 1193  # 左上角起始X坐标
+    OFFSET_X: 1405  # 左上角起始X坐标
     # OFFSET_Y: 0  # 左上角起始Y坐标
     # CENTER_X: 0  # 中心X坐标
     CENTER_Y: 456  # 中心Y坐标
@@ -61,5 +61,5 @@ GUI:
     # CENTER_Y: 0  # 中心Y坐标
 
 # 其他参数
-LOG_LEVEL: INFO  # 日志记录级别（TRACE、DEBUG、INFO、SUCCESS、WARNING、ERROR、CRITICAL）
+LOG_LEVEL: TRACE  # 日志记录级别（TRACE、DEBUG、INFO、SUCCESS、WARNING、ERROR、CRITICAL）
 LOG_RETENTION: 3  # 日志保留数量
