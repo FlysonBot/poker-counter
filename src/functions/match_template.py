@@ -11,12 +11,13 @@ from loguru import logger
 from misc.custom_types import (
     AnyEnum,
     AnyImage,
+    Card,
     CardIntDict,
     EnumTemplateDict,
     GrayscaleImage,
+    Mark,
     MatchResult,
 )
-from models.enum import Card, Mark
 
 TEMPLATE_DIR: Path = Path(__file__).parent.parent / "templates"
 

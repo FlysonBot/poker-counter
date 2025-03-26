@@ -9,9 +9,8 @@ from loguru import logger
 
 from core.backend_thread import BackendThread
 from functions.windows_offset import calculate_offset
-from misc.custom_types import ConfigDict
+from misc.custom_types import ConfigDict, WindowsType
 from models.config import GUI, GUI_UPDATE_INTERVAL
-from models.enum import WindowsType
 
 from .counter_window import CounterWindow
 

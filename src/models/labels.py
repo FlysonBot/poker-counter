@@ -6,10 +6,8 @@ import tkinter as tk
 from dataclasses import dataclass
 from typing import Callable
 
-from misc.custom_types import CardStrDict, CardStrVarDict
+from misc.custom_types import Card, CardStrDict, CardStrVarDict, WindowsType
 from misc.singleton import singleton
-
-from .enum import Card, WindowsType
 
 
 def _create_cardvar_dict(initial_value: CardStrDict) -> CardStrVarDict:

@@ -7,10 +7,8 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from misc.custom_types import CardIntDict, CardIntVarDict
+from misc.custom_types import Card, CardIntDict, CardIntVarDict, Player
 from misc.singleton import singleton
-
-from .enum import Card, Player
 
 
 def _create_cardintvar_dict(initial_value: CardIntDict) -> CardIntVarDict:

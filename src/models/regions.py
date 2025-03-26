@@ -8,10 +8,9 @@ from loguru import logger
 
 from functions.color_percentage import color_percentage
 from functions.match_template import MARK_TEMPLATES, best_template_match, identify_cards
-from misc.custom_types import CardIntDict, GrayscaleImage
+from misc.custom_types import CardIntDict, GrayscaleImage, Mark, RegionState
 from models.config import THRESHOLDS
 
-from .enum import Mark, RegionState
 from .screenshot import screenshot
 
 

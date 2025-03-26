@@ -7,12 +7,11 @@ from tkinter import ttk
 from typing import Any, Callable, Dict
 
 from functions.windows_offset import calculate_offset
-from misc.custom_types import ConfigDict
+from misc.custom_types import Card, ConfigDict, WindowsType
 from misc.logger import logger, open_latest_log
 from misc.open_file import open_config
 from models.config import GUI
 from models.counters import CardCounter
-from models.enum import Card, WindowsType
 from models.labels import text_color
 
 

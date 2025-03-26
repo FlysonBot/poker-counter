@@ -8,11 +8,10 @@ from time import sleep
 
 from loguru import logger
 
-from misc.custom_types import CardIntDict
+from misc.custom_types import Card, CardIntDict, Player, RegionState, WindowsType
 from misc.singleton import singleton
 from models.config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from models.counters import CardCounter
-from models.enum import Card, Player, RegionState, WindowsType
 from models.game_state import GameState, card_regions
 from models.labels import text_color
 from models.screenshot import screenshot

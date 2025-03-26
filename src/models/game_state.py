@@ -7,10 +7,9 @@ from dataclasses import dataclass
 from loguru import logger
 
 from functions.match_template import MARK_TEMPLATES, best_template_match
-from misc.custom_types import CardIntDict
+from misc.custom_types import CardIntDict, Mark, Player, RegionState
 from misc.singleton import singleton
 from models.config import REGIONS, THRESHOLDS
-from models.enum import Mark, Player, RegionState
 
 from .regions import Region
 
