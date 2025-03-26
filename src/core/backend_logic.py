@@ -13,7 +13,7 @@ from misc.singleton import singleton
 from models.config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL
 from models.counters import CardCounter
 from models.game_state import GameState, card_regions
-from models.labels import text_color
+from models.labels import StringLabelsProperty
 from models.screenshot import screenshot
 
 
@@ -21,10 +21,13 @@ from models.screenshot import screenshot
 class BackendLogic:
     """后端逻辑类，负责监控游戏状态并更新记牌器"""
 
-    def __init__(self, stop_event: Event) -> None:
-        self._stop_event = stop_event
+    def __init__(self) -> None:
         self._counter = CardCounter()
         self._gs = GameState()
+        self.text_color = StringLabelsProperty({card: "black" for card in Card})
+
+    def set_stop_event(self, stop_event: Event) -> None:
+        self._stop_event = stop_event
 
     @property
     def _keep_running(self) -> bool:
@@ -34,9 +37,9 @@ class BackendLogic:
         """更新标签字体为红色"""
         match player:
             case Player.LEFT:
-                text_color.change_style(card, WindowsType.LEFT, "red")
+                self.text_color.change_style(card, WindowsType.LEFT, "red")
             case Player.RIGHT:
-                text_color.change_style(card, WindowsType.RIGHT, "red")
+                self.text_color.change_style(card, WindowsType.RIGHT, "red")
             case _:
                 pass
 

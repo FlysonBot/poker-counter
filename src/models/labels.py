@@ -56,8 +56,3 @@ class StringLabelsProperty:
             "write",
             lambda str1, str2, str3: callback(self._counters[window][card].get()),
         )
-
-
-BLACK_TEXT_LABELS = {card: "black" for card in Card}
-
-text_color = StringLabelsProperty(BLACK_TEXT_LABELS)

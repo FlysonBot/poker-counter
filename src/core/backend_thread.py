@@ -18,7 +18,8 @@ class BackendThread:
     def __init__(self) -> None:
         self._keep_running = True
         self._stop_event = Event()
-        self._backend_logic = BackendLogic(self._stop_event)
+        self._backend_logic = BackendLogic()
+        self._backend_logic.set_stop_event(self._stop_event)
         self._thread = Thread(target=self._backend_logic.run, daemon=True)
 
     def start(self) -> None:

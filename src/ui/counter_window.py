@@ -6,13 +6,13 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict
 
+from core.backend_logic import BackendLogic
 from functions.windows_offset import calculate_offset
 from misc.custom_types import Card, ConfigDict, WindowsType
 from misc.logger import logger, open_latest_log
 from misc.open_file import open_config
 from models.config import GUI
 from models.counters import CardCounter
-from models.labels import text_color
 
 
 class CounterWindow(tk.Toplevel):
@@ -159,8 +159,9 @@ class CounterWindow(tk.Toplevel):
 
     def _bind_label_style(self) -> None:
         """绑定标签样式更新函数到标签样式变量类"""
+        backend_logic = BackendLogic()
         for card, label in self._count_labels.items():
-            text_color.bind_callback(
+            backend_logic.text_color.bind_callback(
                 self.WINDOW_TYPE,
                 card,
                 lambda style, label=label: (label.config(fg=style), None)[1],
