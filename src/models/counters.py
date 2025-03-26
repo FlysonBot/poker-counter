@@ -32,9 +32,10 @@ EMPTY_COUNT = {card: 0 for card in Card}
 class CardCounter:
     """牌数统计器类，负责跟踪剩余牌和已出牌的数量"""
 
-    remaining_counter = _create_cardintvar_dict(FULL_COUNT)
-    player1_counter = _create_cardintvar_dict(EMPTY_COUNT)
-    player2_counter = _create_cardintvar_dict(EMPTY_COUNT)
+    def __post_init__(self) -> None:
+        self.remaining_counter = _create_cardintvar_dict(FULL_COUNT)
+        self.player1_counter = _create_cardintvar_dict(EMPTY_COUNT)
+        self.player2_counter = _create_cardintvar_dict(EMPTY_COUNT)
 
     def reset(self) -> None:
         """重置记牌器计数为初始值"""
