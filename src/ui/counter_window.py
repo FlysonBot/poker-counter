@@ -125,7 +125,6 @@ class CounterWindow(tk.Toplevel):
                 self._table_frame,
                 anchor="center",
                 relief="solid",
-                font=("Arial", FONT_SIZE),
                 highlightbackground="red",
                 highlightthickness=1,
                 width=2,
@@ -134,9 +133,14 @@ class CounterWindow(tk.Toplevel):
 
         for idx, card in enumerate(Card):
             label_text = card.value if card.value != "JOKER" else "王"
-            card_label = create_label(text=label_text, bg="lightblue", fg="black")
+            card_label = create_label(
+                text=label_text, font=("Arial", FONT_SIZE), bg="lightblue", fg="black"
+            )
             count_label = create_label(
-                textvariable=get_count_text(card), bg="lightyellow", fg="black"
+                textvariable=get_count_text(card),
+                font=("Arial", FONT_SIZE, "bold"),
+                bg="lightyellow",
+                fg="black",
             )
 
             # 根据窗口类型放置标签
