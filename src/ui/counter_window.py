@@ -11,7 +11,7 @@ from functions.windows_offset import calculate_offset
 from misc.custom_types import Card, ConfigDict, WindowsType
 from misc.logger import logger, open_latest_log
 from misc.open_file import open_config
-from models.config import GUI
+from models.config import GUI, HOTKEYS
 from models.counters import CardCounter
 from models.labels import LabelProperties
 
@@ -86,12 +86,19 @@ class CounterWindow(tk.Toplevel):
         self.bind("<Button-1>", self._on_drag_start)  # 鼠标左键按下  # type: ignore
         self.bind("<B1-Motion>", self._on_drag_move)  # 鼠标左键拖动  # type: ignore
 
-        self.bind(
-            "<KeyPress-q>", lambda event: self.PARENT.destroy()
-        )  # q键退出应用程序
-        self.bind("<KeyPress-l>", lambda event: open_latest_log())  # l键打开日志文件
-        self.bind("<KeyPress-c>", lambda event: open_config())  # c键打开配置文件
-        self.bind("<KeyPress-r>", lambda event: self._reset())  # r键重置记牌器
+        hotkey_dict: dict[str, Callable[[Any], None]] = {  # type: ignore
+            "QUIT": lambda event: self.PARENT.destroy(),
+            "OPEN_LOG": lambda event: open_latest_log(),
+            "OPEN_CONFIG": lambda event: open_config(),
+            "RESET": lambda event: self._reset(),
+        }
+
+        for hotkey, callback in hotkey_dict.items():
+            if hotkey in HOTKEYS:
+                try:
+                    self.bind(f"<KeyPress-{HOTKEYS[hotkey]}>", callback)
+                except Exception:
+                    logger.error(f"热键{hotkey}绑定失败，无法绑定到{HOTKEYS[hotkey]}。")
 
         logger.success(f"{self.WINDOW_TYPE.value}窗口键盘和鼠标事件绑定成功")
 
