@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict
 
+from core.backend_thread import BackendThread
 from functions.windows_offset import calculate_offset
 from misc.custom_types import Card, ConfigDict, WindowsType
 from misc.logger import logger, open_latest_log
@@ -90,6 +91,7 @@ class CounterWindow(tk.Toplevel):
         )  # q键退出应用程序
         self.bind("<KeyPress-l>", lambda event: open_latest_log())  # l键打开日志文件
         self.bind("<KeyPress-c>", lambda event: open_config())  # c键打开配置文件
+        self.bind("<KeyPress-r>", lambda event: self._reset())  # r键重置记牌器
 
         logger.success(f"{self.WINDOW_TYPE.value}窗口键盘和鼠标事件绑定成功")
 
@@ -187,3 +189,9 @@ class CounterWindow(tk.Toplevel):
         x = self.winfo_x() + (event.x - self._drag_start_x)
         y = self.winfo_y() + (event.y - self._drag_start_y)
         self.geometry(f"+{x}+{y}")
+
+    def _reset(self) -> None:
+        """重置记牌器"""
+        backend = BackendThread()  # 获取全局后端线程
+        backend.terminate()
+        backend.start()
