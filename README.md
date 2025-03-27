@@ -41,3 +41,53 @@
 ## 欢迎分享和奉献
 
 喜欢我的项目？欢迎分享和奉献，让更多人能够使用它。为这个项目加星星可以让更多的人看到这个项目。
+
+## 开发人员说明
+
+如果你想为该项目做出贡献，你可以按照以下推荐的方式配置开发环境：
+
+1. 安装 uv 作为 Python 的包管理器：
+
+   ```bash
+   pip install uv
+   ```
+
+2. 从 GitHub 上 Fork 本项目，然后克隆到本地：
+
+   ```bash
+   git clone https://github.com/your-username/poker-counter.git
+   ```
+
+3. 用 uv 在项目目录下创建一个新的 Python 3.12 虚拟环境：
+
+   ```bash
+   uv venv --python 3.12
+   ```
+
+4. 激活虚拟环境：
+
+   ```bash
+   .venv/bin/activate
+   ```
+
+5. 在虚拟环境中安装项目依赖：
+
+   ```bash
+   uv sync
+   ```
+
+完成啦！现在你可以在你的 IDE 中进行开发了。记得选择 .venv/bin/python3 作为你的 Python 解释器。如需编译该程序，请使用 PyInstaller 如下：
+
+1. 安装 PyInstaller：
+
+   ```bash
+   uv pip install pyinstaller
+   ```
+
+2. 编译该程序：
+
+   ```bash
+   pyinstaller main.spec
+   ```
+
+完成后，你将在 dist 目录下找到编译好的程序。
