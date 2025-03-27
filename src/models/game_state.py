@@ -87,7 +87,7 @@ class GameState:
             return False
 
         cards = game_end_marker.recognize_cards()
-        if len(cards) < 0:
+        if len(cards) == 0:
             logger.debug("游戏未结束。底牌区域未识别到牌")
             return False
 
