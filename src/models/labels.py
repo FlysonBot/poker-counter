@@ -58,7 +58,7 @@ class LabelProperties:
     def __post_init__(self) -> None:
         self.text_color = StringLabelsProperty(
             {
-                WindowsType.MAIN: {card: "red" for card in Card},
+                WindowsType.MAIN: {card: "black" for card in Card},
                 WindowsType.LEFT: {card: "black" for card in Card},
                 WindowsType.RIGHT: {card: "black" for card in Card},
             }

@@ -104,6 +104,11 @@ class BackendLogic:
         self._mark_cards(my_cards, Player.MIDDLE)
         self._counter.player2_count = 0  # 重置出牌计数
 
+        # 将未标记的牌标记为红色
+        not_my_cards = {card for card in Card if card not in my_cards}
+        for card in not_my_cards:
+            self.label_properties.text_color.change_style(card, WindowsType.MAIN, "red")
+
         expected_card_count = 17 if self._landlord is Player.MIDDLE else 20
         if sum(my_cards.values()) != expected_card_count:
             logger.warning(

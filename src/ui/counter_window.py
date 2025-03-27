@@ -174,7 +174,12 @@ class CounterWindow(tk.Toplevel):
     def _bind_label_style(self) -> None:
         """绑定标签样式更新函数到标签样式变量类"""
         label_properties = LabelProperties()
-        for card, label in self._count_labels.items():
+        binding_labels = (
+            self._count_labels  # 对左右两个窗口绑定计数标签
+            if self.WINDOW_TYPE is not WindowsType.MAIN
+            else self._card_labels  # 对主窗口绑定牌名标签
+        )
+        for card, label in binding_labels.items():
             label_properties.text_color.bind_callback(
                 self.WINDOW_TYPE,
                 card,
