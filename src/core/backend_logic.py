@@ -117,7 +117,8 @@ class BackendLogic:
         logger.info(f"识别到已出牌：{cards}")
 
         if len(cards) > 0:
-            self._mark_cards(cards, self._current_player)
+            if self._current_player is not Player.MIDDLE:  # 不再次标记自己的牌
+                self._mark_cards(cards, self._current_player)
             return True
 
         logger.debug("未识别到任何牌，继续等待。")
