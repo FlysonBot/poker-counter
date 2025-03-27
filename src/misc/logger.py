@@ -2,7 +2,9 @@
 增强型日志记录模块，提供日志记录功能，支持文件和控制台输出。
 """
 
+import os
 import sys
+import tkinter as tk
 import traceback
 from pathlib import Path
 from tempfile import gettempdir
@@ -13,6 +15,7 @@ from loguru import logger
 
 from misc.open_file import open_latest_log
 from models.config import LOG_LEVEL
+from ui.master_window import MasterWindow
 
 
 def handle_exception(
@@ -55,8 +58,17 @@ def backend_error_handler(message: str) -> NoReturn:
     if messagebox.askyesno("日志文件", "是否打开日志文件？"):  # type: ignore
         open_latest_log()
 
+    # 关闭后端线程和窗口
+    master_window: MasterWindow = tk._default_root  # type: ignore
+    if master_window:
+        # 关闭后端线程
+        if master_window.backend.is_running:  # type: ignore
+            master_window.backend.terminate()  # type: ignore
+        # 关闭窗口
+        master_window.destroy()  # type: ignore
+
     # 退出程序
-    sys.exit(1)
+    os._exit(1)
 
 
 if len(logger._core.handlers) > 0:  # type: ignore
