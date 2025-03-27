@@ -3,7 +3,6 @@
 """
 
 import tkinter as tk
-import tkinter.font as tkFont
 
 from loguru import logger
 
@@ -26,7 +25,6 @@ class MasterWindow(tk.Tk):
         # 初始化对象
         self.windows: list[CounterWindow] = []
         self.backend = BackendThread()
-        self.default_font = tkFont.nametofont("TkDefaultFont").actual("family")
 
         # 初始化窗口
         config = GUI.get("SWITCH", {})
@@ -54,7 +52,7 @@ class MasterWindow(tk.Tk):
             text="打开记牌器",
             command=self._switch_on,
             width=10,
-            font=(self.default_font, config.get("FONT_SIZE", 12)),
+            font=("TkDefaultFont", config.get("FONT_SIZE", 12)),  # type: ignore
         )
         self.switch.pack(padx=0, pady=0)
 
@@ -65,7 +63,7 @@ class MasterWindow(tk.Tk):
             text="退出程序",
             command=self.destroy,
             width=10,
-            font=(self.default_font, config.get("FONT_SIZE", 12)),
+            font=("TkDefaultFont", config.get("FONT_SIZE", 12)),  # type: ignore
         )
         self.exit.pack(padx=0, pady=0)
 
