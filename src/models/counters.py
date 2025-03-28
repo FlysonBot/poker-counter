@@ -68,7 +68,9 @@ class CardCounter:
                 self.player2_count += 1
 
         if self.remaining_counter[card].get() < 0:
-            logger.warning(f"尝试标记不存在的牌型或已出完的牌：{card.value}")
+            logger.warning(
+                f"尝试标记不存在的牌型或已出完的牌：{card.value}。如果是游戏马上要结束前标记的，可能是误识别，可以忽略。"
+            )
 
         self.remaining_count -= 1
         logger.info(

@@ -89,7 +89,7 @@ class BackendLogic:
     def _find_landlord(self) -> None:
         """找地主"""
         self._landlord = self._gs.landlord_location
-        logger.info("地主是{self._landlord.value}")
+        logger.info(f"地主是{self._landlord.value}")
 
     def _init_player_cycle(self) -> None:
         """调整玩家循环以使地主变为第一个玩家"""
@@ -109,7 +109,7 @@ class BackendLogic:
         for card in not_my_cards:
             self.label_properties.text_color.change_style(card, WindowsType.MAIN, "red")
 
-        expected_card_count = 17 if self._landlord is Player.MIDDLE else 20
+        expected_card_count = 20 if self._landlord is Player.MIDDLE else 17
         if sum(my_cards.values()) != expected_card_count:
             logger.warning(
                 f"自己的牌识别出错，识别到了{sum(my_cards.values())}张牌，但应该识别到{expected_card_count}张牌。"
