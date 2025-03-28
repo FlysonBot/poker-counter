@@ -58,10 +58,10 @@
    git clone https://github.com/your-username/poker-counter.git
    ```
 
-3. 用 uv 在项目目录下创建一个新的 Python 3.12 虚拟环境：
+3. cd 到项目目录，用 uv 在项目目录下创建一个新的虚拟环境：
 
    ```bash
-   uv venv --python 3.12
+   uv venv
    ```
 
 4. 激活虚拟环境：
@@ -84,10 +84,10 @@
    uv pip install pyinstaller
    ```
 
-2. 编译该程序：
+2. 运行编译脚本 `compile.ps1` 来编译程序：
 
-   ```bash
-   pyinstaller main.spec
+   ```powershell
+   .\compile.ps1
    ```
 
-完成后，你将在 dist 目录下找到编译好的程序。
+编译好的程序位于 `dist/main` 目录下，可以在该目录下执行 `main.exe` 来运行程序。程序会被自动打包
