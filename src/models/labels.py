@@ -56,10 +56,25 @@ class StringLabelsProperty:
 @dataclass
 class LabelProperties:
     def __post_init__(self) -> None:
-        self.text_color = StringLabelsProperty(
+        self._init_variables()
+
+    def _init_variables(self) -> None:
+        """初始化标签样式变量"""
+        self._text_color = StringLabelsProperty(
             {
                 WindowsType.MAIN: {card: "black" for card in Card},
                 WindowsType.LEFT: {card: "black" for card in Card},
                 WindowsType.RIGHT: {card: "black" for card in Card},
             }
         )
+
+    @property
+    def text_color(self) -> StringLabelsProperty:
+        """获取标签样式变量"""
+        if not hasattr(self, "_text_color"):
+            self._init_variables()
+        return self._text_color
+
+    def reset(self) -> None:
+        """删除标签样式变量以避免在关闭窗口后重复使用Tkinter变量"""
+        del self._text_color

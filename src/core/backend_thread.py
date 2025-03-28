@@ -24,6 +24,8 @@ class BackendThread:
 
     def _update_thread(self) -> None:
         """更新后端线程"""
+        if hasattr(self, "_thread"):
+            self._old_thread = self._thread
         self._thread = Thread(target=self._backend_logic.run, daemon=True)
 
     def start(self) -> None:
@@ -38,7 +40,6 @@ class BackendThread:
         """由前段调用，终止后端线程"""
         if self.is_running:
             self._stop_event.set()
-            self._thread.join()
             self._update_thread()
             return logger.success("后端线程终止成功")
         return logger.warning("后端线程已停止，无需再次终止")
@@ -46,3 +47,9 @@ class BackendThread:
     @property
     def is_running(self) -> bool:
         return self._thread.is_alive()
+
+    @property
+    def is_old_running(self) -> bool:
+        if hasattr(self, "_old_thread"):
+            return self._old_thread.is_alive()
+        return False

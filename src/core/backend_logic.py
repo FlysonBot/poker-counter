@@ -107,7 +107,16 @@ class BackendLogic:
         # 将未标记的牌标记为红色
         not_my_cards = {card for card in Card if card not in my_cards}
         for card in not_my_cards:
-            self.label_properties.text_color.change_style(card, WindowsType.MAIN, "red")
+            if self._keep_running:  # 避免尝试在主线程已关闭窗口后更改已关闭的窗口
+                self.label_properties.text_color.change_style(
+                    card, WindowsType.MAIN, "red"
+                )
+            else:  # 并配合主线程的关闭命令退出循环
+                break
+
+        # 检查退出事件
+        if not self._keep_running:
+            return
 
         expected_card_count = 20 if self._landlord is Player.MIDDLE else 17
         if sum(my_cards.values()) != expected_card_count:
@@ -169,3 +178,6 @@ class BackendLogic:
                     if self._should_advance() and not self._gs.is_game_ended:
                         self._current_player = next(self._player_cycle)
                         logger.info(f"切换到{self._current_player.value}的区域")
+
+            # 重置标签样式object，以避免在关闭窗口后重复使用Tkinter变量
+            self.label_properties.reset()

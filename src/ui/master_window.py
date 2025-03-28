@@ -90,6 +90,7 @@ class MasterWindow(tk.Tk):
     def _switch_on(self) -> None:
         """打开记牌器"""
         logger.info("用户尝试打开记牌器")
+        self.switch.config(state="disabled")  # 禁用开关按钮以避免重复点击
 
         # 创建主窗口
         if GUI["MAIN"].get("DISPLAY", True):
@@ -113,19 +114,30 @@ class MasterWindow(tk.Tk):
             text="关闭记牌器", command=self._switch_off
         )  # 更新开关按钮状态
 
+        # 等待100毫秒后再启用开关按钮，避免后端线程过早关闭
+        self.after(100, lambda: self.switch.config(state="normal"))
         logger.success("记牌器成功打开")
 
     def _switch_off(self) -> None:
         """关闭记牌器"""
         logger.info("用户尝试关闭记牌器")
+        self.switch.config(state="disabled")  # 禁用开关按钮以避免重复点击
+
+        self.backend.terminate()  # 关闭后端线程
 
         for window in self.windows:  # 关闭所有子窗口
             window.destroy()
-
-        self.backend.terminate()  # 关闭后端线程
 
         self.switch.config(
             text="打开记牌器", command=self._switch_on
         )  # 重置开关按钮状态
 
         logger.success("记牌器成功关闭")
+        self._enable_switch()
+
+    def _enable_switch(self) -> None:
+        """在旧的线程（如果存在）终止后启用开关按钮"""
+        if self.backend.is_old_running:
+            self.after(200, self._enable_switch)  # 等待200毫秒后再次检查
+        else:
+            self.switch.config(state="normal")  # 启用开关按钮
