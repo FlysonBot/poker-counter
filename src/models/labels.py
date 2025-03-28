@@ -55,6 +55,8 @@ class StringLabelsProperty:
 @singleton
 @dataclass
 class LabelProperties:
+    """记牌器标签样式变量类，用于动态更改标签的样式"""
+
     def __post_init__(self) -> None:
         self._init_variables()
 

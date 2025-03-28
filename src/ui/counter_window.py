@@ -6,11 +6,12 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Any, Callable, Dict
 
+from loguru import logger
+
 from core.backend_thread import BackendThread
 from functions.windows_offset import calculate_offset
 from misc.custom_types import Card, ConfigDict, WindowsType
-from misc.logger import logger, open_latest_log
-from misc.open_file import open_config
+from misc.open_file import open_config, open_latest_log
 from models.config import GUI, HOTKEYS
 from models.counters import CardCounter
 from models.labels import LabelProperties

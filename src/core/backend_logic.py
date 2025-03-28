@@ -30,6 +30,7 @@ class BackendLogic:
         logger.info("后端逻辑类初始化完毕")
 
     def set_stop_event(self, stop_event: Event) -> None:
+        """设置后端终止事件"""
         self._stop_event = stop_event
         logger.info("后端终止事件设置完毕")
 

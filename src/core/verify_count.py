@@ -1,3 +1,7 @@
+"""
+游戏结束自检模块，负责检查游戏结束时记牌器记录的数值是否合法（是否在合法范围内）。
+"""
+
 from loguru import logger
 
 from misc.custom_types import Card, Player
@@ -5,6 +9,8 @@ from models.counters import CardCounter
 
 
 class GameEndExamination:
+    """游戏结束自检类，用于检查游戏结束时记牌器记录的数值是否合法（是否在合法范围内）"""
+
     def __init__(self, landlord: Player, winner: Player) -> None:
         self._landlord = landlord
         self._winner = winner

@@ -1,6 +1,6 @@
 [project]
 name = "poker-counter"
-version = "0.1.0"
+version = "1.1.1"
 description = "一个适用于中游（中国游戏）里的普通54张牌斗地主的记牌器。"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -20,3 +20,6 @@ dependencies = [
     "pillow>=11.1.0",
     "pyyaml>=6.0.2",
 ]
+
+[tool.pylint]
+disable = ["W0201", "E0203", "C3001", "R0903", "E1101", "R0913", "R0917", "W0718", "C0103", "W0106", "W0212", "R0801"]
