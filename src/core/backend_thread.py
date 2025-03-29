@@ -52,6 +52,4 @@ class BackendThread:
     @property
     def is_old_running(self) -> bool:
         """检查上一次启动的后端线程是否还在运行"""
-        if hasattr(self, "_old_thread"):
-            return self._old_thread.is_alive()
-        return False
+        return self._old_thread.is_alive() if hasattr(self, "_old_thread") else False

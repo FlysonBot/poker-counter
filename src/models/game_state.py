@@ -68,6 +68,7 @@ class GameState:
 
     @property
     def landlord_location(self) -> Player:
+        # sourcery skip: assign-if-exp, reintroduce-else
         """根据地主标记匹配置信度判断地主是谁"""
         confidences = self._match_landlord_mark
         max_index = confidences.index(max(confidences))
