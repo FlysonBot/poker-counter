@@ -54,10 +54,7 @@ class GameEndExamination:
         min_count: dict[Player, int] = {}
         for player in Player:
             if player is self._winner:
-                if player is self._landlord:
-                    min_count[player] = 20  # 地主获胜需要出全部20张牌
-                else:
-                    min_count[player] = 17  # 其他玩家获胜需要出全部17张牌
+                min_count[player] = 20 if player is self._landlord else 17
             else:
                 min_count[player] = 0
         self._player_min_count = min_count
@@ -67,10 +64,7 @@ class GameEndExamination:
             if player is self._winner:
                 max_count[player] = min_count[player]
             else:
-                if player is self._landlord:
-                    max_count[player] = 19  # 如果地主没赢，最多出了19张牌
-                else:
-                    max_count[player] = 16
+                max_count[player] = 19 if player is self._landlord else 16
         self._player_max_count = max_count
 
     def _check_total_played(self) -> None:
@@ -101,15 +95,14 @@ class GameEndExamination:
                     winner_under_count(player.value, count)
                 elif count > self._player_max_count[player]:
                     winner_over_count(player.value, count)
-            else:
-                if count < self._player_min_count[player]:
-                    other_under_count(
-                        player.value, count, self._player_min_count[player]
-                    )
-                elif count > self._player_max_count[player]:
-                    other_over_count(
-                        player.value, count, self._player_max_count[player]
-                    )
+            elif count < self._player_min_count[player]:
+                other_under_count(
+                    player.value, count, self._player_min_count[player]
+                )
+            elif count > self._player_max_count[player]:
+                other_over_count(
+                    player.value, count, self._player_max_count[player]
+                )
 
     def _check_individual_played(self) -> None:
         """检查每个玩家的单独牌数是否合法（是否在合法范围内）"""

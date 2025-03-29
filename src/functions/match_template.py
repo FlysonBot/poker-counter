@@ -42,12 +42,11 @@ def _load_enum_templates(enum: type[AnyEnum]) -> EnumTemplateDict[AnyEnum]:
     :param enum: 枚举类型
     :return: 模板字典
     """
-    templates: dict[AnyEnum, AnyImage] = {}
-
-    for enum_member in enum:
-        templates[enum_member] = _load_template(
-            TEMPLATE_DIR / f"{enum_member.value}.png"
-        )
+    templates: dict[AnyEnum, AnyImage] = {
+        enum_member: _load_template(TEMPLATE_DIR / f"{enum_member.value}.png")
+        for enum_member in enum
+    }
+    # sourcery skip: collection-builtin-to-comprehension
     logger.success(f"成功加载以下模板：{set(member.value for member in enum)}")
 
     return templates
