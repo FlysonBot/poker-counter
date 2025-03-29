@@ -179,6 +179,9 @@ class BackendLogic:
                     if self._should_advance() and not self._gs.is_game_ended:
                         self._current_player = next(self._player_cycle)
                         logger.info(f"切换到{self._current_player.value}的区域")
+                    
+                    else:  # 屏幕截图间隔
+                        sleep(SCREENSHOT_INTERVAL)
 
             # 重置标签样式object，以避免在关闭窗口后重复使用Tkinter变量
             self.label_properties.reset()

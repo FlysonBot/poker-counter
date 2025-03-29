@@ -3,10 +3,7 @@
 """
 
 from misc.logger import logger
-from models.config import GUI_UPDATE_INTERVAL
 from ui.master_window import MasterWindow
-
-UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 
 
 if __name__ == "__main__":

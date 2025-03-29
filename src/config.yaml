@@ -20,8 +20,7 @@ THRESHOLDS:
   wait: 0.9  # 等待出牌 颜色占比阈值
 
 # 间隔（秒）
-SCREENSHOT_INTERVAL: 0.2  # 截图间隔
-GUI_UPDATE_INTERVAL: 0.2  # 画面更新间隔
+SCREENSHOT_INTERVAL: 0.1  # 截图间隔
 GAME_START_INTERVAL: 1  # 等待下一次判断游戏开始时的间隔
 
 # 记牌器窗口默认显示位置坐标(OFFSET和CENTER二选一)

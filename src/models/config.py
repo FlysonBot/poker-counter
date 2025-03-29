@@ -39,7 +39,6 @@ config = load_config(current_dir() / "config.yaml")
 REGIONS = config["REGIONS"]
 THRESHOLDS = config["THRESHOLDS"]
 SCREENSHOT_INTERVAL = config["SCREENSHOT_INTERVAL"]
-GUI_UPDATE_INTERVAL = config["GUI_UPDATE_INTERVAL"]
 GAME_START_INTERVAL = config["GAME_START_INTERVAL"]
 GUI = config["GUI"]
 HOTKEYS = config["HOTKEYS"]

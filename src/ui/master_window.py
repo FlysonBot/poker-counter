@@ -9,11 +9,9 @@ from loguru import logger
 from core.backend_thread import BackendThread
 from functions.windows_offset import calculate_offset
 from misc.custom_types import ConfigDict, WindowsType
-from models.config import GUI, GUI_UPDATE_INTERVAL
+from models.config import GUI
 
 from .counter_window import CounterWindow
-
-UPDATE_INTERVAL = int(GUI_UPDATE_INTERVAL * 1000)  # 转换为毫秒
 
 
 class MasterWindow(tk.Tk):
