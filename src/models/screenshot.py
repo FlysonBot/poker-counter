@@ -5,19 +5,24 @@
 from dataclasses import dataclass
 from time import sleep
 
-import cv2
 import numpy as np
 from loguru import logger
-from PIL import ImageGrab
+from PIL import ImageGrab, Image
 
-from misc.custom_types import GrayscaleImage
+from misc.custom_types import AnyImage, GrayscaleImage
 from misc.singleton import singleton
 
+def RGB_as_BGR2GRAY(image: AnyImage) -> GrayscaleImage:
+    """将RGB图像当作BGR图像转换为灰度图像。这会加重蓝色并减轻红色对灰度图片的影响。
+    :param image: 输入图像
+    :return: 转换后的灰度图像
+    """
+    return Image.merge("RGB", image.split()[::-1]).convert("L")  # type: ignore
 
 def _take_screenshot() -> GrayscaleImage:
     """尝试截取屏幕截图，并将其转换为灰度图像。如果截图失败，则重试2秒后重试"""
     try:
-        return cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)  # type: ignore
+        return np.array(RGB_as_BGR2GRAY(ImageGrab.grab()))  # type: ignore
 
     except OSError:
         logger.info("截图失败，可能是屏幕超时。将在2秒后重试。")
@@ -26,7 +31,7 @@ def _take_screenshot() -> GrayscaleImage:
 
         while True:
             try:
-                image = cv2.cvtColor(np.array(ImageGrab.grab()), cv2.COLOR_BGR2GRAY)
+                image = np.array(RGB_as_BGR2GRAY(ImageGrab.grab()))  # type: ignore
                 logger.info("截图成功")
                 return image  # type: ignore
 

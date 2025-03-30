@@ -4,7 +4,6 @@
 
 from typing import Union
 
-import cv2
 import numpy as np
 
 from misc.custom_types import RGB, AnyImage
@@ -34,7 +33,10 @@ def color_percentage(
     upper_bound = np.clip(np_color + tolerance, 0, 255)
 
     # 根据范围创建掩码（输出为一个数组，0代表超出范围，255代表在范围内）
-    mask = cv2.inRange(image, lower_bound, upper_bound)
+    if len(image.shape) == 3:  # 彩色图像
+        mask = np.all((image >= lower_bound) & (image <= upper_bound), axis=-1)
+    else:  # 灰度图像
+        mask = (image >= lower_bound) & (image <= upper_bound)
 
     # 计算目标颜色的像素数量（通过统计掩码中非0的数值）
     target_pixels: int = np.count_nonzero(mask)

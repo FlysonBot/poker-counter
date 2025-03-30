@@ -4,9 +4,10 @@
 
 from pathlib import Path
 
-import cv2
 import numpy as np
+from cv2 import TM_CCOEFF_NORMED, matchTemplate, minMaxLoc
 from loguru import logger
+from PIL import Image
 
 from misc.custom_types import (
     AnyEnum,
@@ -14,7 +15,6 @@ from misc.custom_types import (
     Card,
     CardIntDict,
     EnumTemplateDict,
-    GrayscaleImage,
     Mark,
     MatchResult,
 )
@@ -28,13 +28,13 @@ def _load_template(template_path: Path) -> AnyImage:
     :return: 模板图像
     """
     logger.trace(f"尝试加载模板: {template_path.stem}")
-    image: GrayscaleImage = cv2.imread(str(template_path), 0)  # type: ignore
+    image= np.array(Image.open(template_path).convert("L"))  # type: ignore
 
     if not template_path.exists():
         logger.error(f"模板缺失: {template_path}")
     if image is None:
         logger.error(f"模板图片无效或无法访问: {template_path}")
-    return image
+    return image  # type: ignore
 
 
 def _load_enum_templates(enum: type[AnyEnum]) -> EnumTemplateDict[AnyEnum]:
@@ -65,7 +65,7 @@ def template_match(
     :param threshold: 匹配阈值
     :return: 匹配的结果列表（包含置信度和位置）
     """
-    result = cv2.matchTemplate(target, template, cv2.TM_CCOEFF_NORMED)
+    result = matchTemplate(target, template, TM_CCOEFF_NORMED)
     locations = np.where(result >= threshold)
 
     return [(result[pt[1], pt[0]], pt) for pt in zip(*locations[::-1])]  # type: ignore
@@ -77,8 +77,8 @@ def best_template_match(target: AnyImage, template: AnyImage) -> MatchResult:
     :param template: 模板图像
     :return: 最佳匹配结果的置信度和位置
     """
-    result = cv2.matchTemplate(target, template, cv2.TM_CCOEFF_NORMED)
-    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+    result = matchTemplate(target, template, TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = minMaxLoc(result)
 
     return max_val, (max_loc[0], max_loc[1])
 
