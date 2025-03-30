@@ -139,3 +139,7 @@ class MasterWindow(tk.Tk):
             self.after(200, self._enable_switch)  # 等待200毫秒后再次检查
         else:
             self.switch.config(state="normal")  # 启用开关按钮
+
+    def delayed_destroy(self) -> None:
+        """延迟销毁窗口，允许后端线程出错时让主窗口自己关闭自身（而不是由后端线程），避免卡死"""
+        self.after(1000, self.destroy)

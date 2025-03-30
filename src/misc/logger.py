@@ -62,10 +62,10 @@ def backend_error_handler(message: str) -> NoReturn:
     master_window: MasterWindow = tk._default_root  # type: ignore
     if master_window:
         # 关闭后端线程
-        if master_window.backend.is_running:  # type: ignore
-            master_window.backend.terminate()  # type: ignore
+        master_window.backend.terminate()  # type: ignore
+
         # 关闭窗口
-        master_window.destroy()  # type: ignore
+        master_window.delayed_destroy()  # type: ignore
 
     # 退出程序
     os._exit(1)
