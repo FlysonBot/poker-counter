@@ -23,3 +23,13 @@ dependencies = [
 
 [tool.pylint]
 disable = ["W0201", "E0203", "C3001", "R0903", "E1101", "R0913", "R0917", "W0718", "C0103", "W0106", "W0212", "R0801"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "Windows"
+venvPath = "."
+venv = ".venv"
+extraPaths = ["src"]
+
+[tool.ruff]
+src = ["src"]

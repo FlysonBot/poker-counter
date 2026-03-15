@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['src\\main.py'],
+    ['src2\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('src\\templates', 'templates')],
+    datas=[('src2\\templates', 'templates'), ('src2\\config.yaml', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
