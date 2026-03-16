@@ -1,14 +1,15 @@
 """
 截图与窗口定位模块。负责定位游戏窗口、截图并将比例坐标转换为像素坐标。
-Windows-only（pygetwindow / PIL.ImageGrab）。
+Windows-only（pygetwindow / mss）。
 """
 
 from time import sleep
 from typing import Optional
 
+import cv2
+import mss
 import numpy as np
 from loguru import logger
-from PIL import Image, ImageGrab
 
 from config import GAME_WINDOW_TITLE, REGIONS
 
@@ -51,19 +52,19 @@ def find_game_window() -> Optional[Rect]:
 
 def _grab_gray(bbox: Optional[tuple] = None) -> GrayImage:
     """截取屏幕（或指定区域）并转为灰度图。
-    PIL ImageGrab 返回 RGB 格式，这里先把通道顺序反转成 BGR 再转灰度，
-    目的是加重蓝色通道、减轻红色通道对灰度值的影响，
-    与旧版的 RGB_as_BGR2GRAY 行为保持一致。
-    include_layered_windows=False 排除叠加层窗口（如本程序自身的悬浮窗），
-    all_screens=True 支持多显示器，
-    两者都不影响光标——PIL ImageGrab 默认不捕获鼠标光标。
+    mss 返回 BGRA 格式，cv2.COLOR_BGRA2GRAY 权重为 0.299*B + 0.587*G + 0.114*R，
+    与旧版 PIL channel-flip 技巧的加权结果完全一致。
+    mss 默认支持多显示器且不捕获叠加层窗口（如本程序自身的悬浮窗）。
     """
-    pil_img: Image.Image = ImageGrab.grab(bbox=bbox, include_layered_windows=False, all_screens=True)
-    rgb = np.array(pil_img)
-    # [:, :, ::-1] 将 RGB 通道顺序反转为 BGR
-    bgr_pil = Image.fromarray(rgb[:, :, ::-1])
-    gray = np.array(bgr_pil.convert("L"))
-    return gray
+    with mss.mss() as sct:
+        monitor = (
+            {"left": bbox[0], "top": bbox[1], "width": bbox[2] - bbox[0], "height": bbox[3] - bbox[1]}
+            if bbox
+            else sct.monitors[0]
+        )
+        raw = sct.grab(monitor)
+    bgra = np.array(raw)
+    return cv2.cvtColor(bgra, cv2.COLOR_BGRA2GRAY)
 
 
 def take_screenshot(
