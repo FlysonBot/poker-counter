@@ -127,11 +127,11 @@ class OverlayWindow(tk.Toplevel):
         """鼠标移动时根据位置更新光标形状，提示用户可以拖拽的方向。"""
         edge = self._get_edge(event.x, event.y)
         cursor_map = {
-            "nw": "size_nw_se", "se": "size_nw_se",
-            "ne": "size_ne_sw", "sw": "size_ne_sw",
-            "n":  "size_ns",    "s":  "size_ns",
-            "w":  "size_we",    "e":  "size_we",
-            "":   "fleur",  # 内部显示移动光标（虽然内部用 _inner 覆盖了，保险起见）
+            "nw": "top_left_corner",  "se": "bottom_right_corner",
+            "ne": "top_right_corner", "sw": "bottom_left_corner",
+            "n":  "top_side",         "s":  "bottom_side",
+            "w":  "left_side",        "e":  "right_side",
+            "":   "fleur",
         }
         self.config(cursor=cursor_map.get(edge, "arrow"))
 

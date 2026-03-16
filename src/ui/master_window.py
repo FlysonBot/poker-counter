@@ -75,6 +75,9 @@ class MasterWindow(tk.Tk):
         # 立即禁用按钮，防止用户在后端启动期间重复点击
         self._btn_switch.config(state="disabled")
 
+        # 开始计数时自动隐藏叠加层（假定用户已完成区域调整）
+        self._overlay._hide()
+
         # 创建各记牌器悬浮窗（根据 config.yaml 中的 DISPLAY 配置决定是否显示）
         self._windows.clear()
         for wtype in WindowsType:
