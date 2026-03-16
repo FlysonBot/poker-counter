@@ -1,0 +1,130 @@
+"""
+叠加层管理器。
+管理所有区域调整窗口的显示/隐藏，处理首次启动逻辑，
+将调整后的坐标转换回比例值并写回 config.yaml。
+"""
+
+import yaml
+from pathlib import Path
+from loguru import logger
+
+from capture import find_game_window, region_to_pixels
+from config import REGIONS
+from ui.overlay_window import OverlayWindow
+
+
+# config.yaml 的路径（与 config.py 里的逻辑一致）
+def _config_path() -> Path:
+    import sys
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent / "config.yaml"
+    return Path(__file__).parent.parent / "config.yaml"
+
+
+class OverlayManager:
+    """管理所有区域叠加窗口的生命周期。
+
+    职责：
+    - 首次启动时自动显示叠加层
+    - 热键 c 切换显示/隐藏
+    - 用户调整后将像素坐标转换回比例值，写回 config.yaml
+    """
+
+    def __init__(self, parent) -> None:
+        self._parent = parent
+        self._windows: dict[str, OverlayWindow] = {}
+        self._visible = False
+
+    def toggle(self) -> None:
+        """切换叠加层显示/隐藏。热键 c 调用此方法。"""
+        if self._visible:
+            self._hide()
+        else:
+            self._show()
+
+    def show_if_first_launch(self) -> None:
+        """如果是首次启动，自动显示叠加层并将标志写为 false。"""
+        from config import raw_config  # 读取原始 yaml 数据
+        if raw_config.get("IS_FIRST_LAUNCH", False):
+            logger.info("首次启动，自动显示区域调整叠加层")
+            self._show()
+            # 将 IS_FIRST_LAUNCH 改为 false，下次不再自动显示
+            self._set_first_launch_done()
+
+    def _show(self) -> None:
+        """创建并显示所有区域的叠加窗口。"""
+        if self._visible:
+            return
+
+        # 获取游戏窗口位置，用于把比例坐标转成屏幕像素坐标
+        window_rect = find_game_window()
+        if window_rect is None:
+            logger.warning("找不到游戏窗口，无法显示叠加层")
+            return
+
+        for name in REGIONS:
+            x1, y1, x2, y2 = region_to_pixels(name, window_rect)
+            win = OverlayWindow(self._parent, name, x1, y1, x2, y2)
+            win.register_on_change(self._on_region_changed)
+            self._windows[name] = win
+
+        self._visible = True
+        logger.info("区域调整叠加层已显示")
+
+    def _hide(self) -> None:
+        """销毁所有叠加窗口。"""
+        for win in self._windows.values():
+            win.destroy()
+        self._windows.clear()
+        self._visible = False
+        logger.info("区域调整叠加层已隐藏")
+
+    def _on_region_changed(self, region_name: str, rect: tuple[int, int, int, int]) -> None:
+        """用户拖拽完成后触发：把新的像素坐标转换成比例值，写回 config.yaml。"""
+        x1, y1, x2, y2 = rect
+
+        # 重新获取游戏窗口位置，把屏幕像素坐标转换回相对于游戏窗口的比例
+        window_rect = find_game_window()
+        if window_rect is None:
+            logger.warning("找不到游戏窗口，无法保存区域坐标")
+            return
+
+        wl = window_rect.left
+        wt = window_rect.top
+        ww = window_rect.width
+        wh = window_rect.height
+
+        # 转换为比例值，保留 4 位小数
+        rx1 = round((x1 - wl) / ww, 4)
+        ry1 = round((y1 - wt) / wh, 4)
+        rx2 = round((x2 - wl) / ww, 4)
+        ry2 = round((y2 - wt) / wh, 4)
+
+        logger.info(f"区域 [{region_name}] 调整为比例坐标: [{rx1}, {ry1}] [{rx2}, {ry2}]")
+        self._write_region_to_yaml(region_name, [[rx1, ry1], [rx2, ry2]])
+
+    def _write_region_to_yaml(self, region_name: str, value: list) -> None:
+        """将单个区域的新坐标写回 config.yaml，保留文件其余内容不变。"""
+        path = _config_path()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            data["REGIONS"][region_name] = value
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f, allow_unicode=True, default_flow_style=None, sort_keys=False)
+            logger.success(f"已将区域 [{region_name}] 保存到 config.yaml")
+        except Exception as e:
+            logger.error(f"写入 config.yaml 失败: {e}")
+
+    def _set_first_launch_done(self) -> None:
+        """将 IS_FIRST_LAUNCH 改为 false 并写回 config.yaml。"""
+        path = _config_path()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            data["IS_FIRST_LAUNCH"] = False
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f, allow_unicode=True, default_flow_style=None, sort_keys=False)
+            logger.info("已将 IS_FIRST_LAUNCH 设为 false")
+        except Exception as e:
+            logger.error(f"写入 IS_FIRST_LAUNCH 失败: {e}")

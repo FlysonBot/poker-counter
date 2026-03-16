@@ -26,8 +26,11 @@ def _load() -> dict:
 
 _cfg = _load()
 
+# 原始配置字典，供需要读取任意 key 的模块使用（如 overlay_manager 读取 IS_FIRST_LAUNCH）
+raw_config: dict = _cfg
+
 # 区域坐标参考分辨率，用于计算模板缩放比例
-REFERENCE_SIZE: tuple[int, int] = tuple(_cfg["REFERENCE_SIZE"])  # type: ignore
+TEMPLATE_SCALE: float = _cfg.get("TEMPLATE_SCALE", 1.0)
 # 各检测区域的比例坐标（0.0–1.0）
 REGIONS: dict = _cfg["REGIONS"]
 # 各项检测的置信度/占比阈值

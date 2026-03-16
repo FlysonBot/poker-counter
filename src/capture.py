@@ -10,7 +10,7 @@ import numpy as np
 from loguru import logger
 from PIL import Image, ImageGrab
 
-from config import GAME_WINDOW_TITLE, REFERENCE_SIZE, REGIONS
+from config import GAME_WINDOW_TITLE, REGIONS, TEMPLATE_SCALE
 
 # 类型别名
 GrayImage = np.ndarray  # shape (H, W), dtype uint8
@@ -82,31 +82,16 @@ def take_screenshot(window_rect: Optional[Rect] = None) -> GrayImage:
 # ---------------------------------------------------------------------------
 
 
-def get_scale(window_rect: Optional[Rect]) -> float:
-    """计算模板缩放比例 = 实际窗口高度 / 参考高度。
-    用于在不同分辨率下将模板缩放到与截图匹配的尺寸。
-    无法定位窗口时返回 1.0，即使用原始模板尺寸（适用于参考分辨率）。
-    """
-    if window_rect is None:
-        return 1.0
-    _, y1, _, y2 = window_rect
-    window_h = y2 - y1
-    return window_h / REFERENCE_SIZE[1]
-
-
-def region_to_pixels(region_name: str, window_rect: Optional[Rect]) -> Rect:
+def region_to_pixels(region_name: str, window_rect: Rect) -> Rect:
     """将 config.yaml 中的比例坐标转换为截图内的像素坐标。
     比例坐标是相对于窗口尺寸的（0.0–1.0），乘以实际尺寸得到像素值。
     window_rect 为 None 时使用参考分辨率（全屏截图的 fallback）。
     """
     (rx1, ry1), (rx2, ry2) = REGIONS[region_name]
 
-    if window_rect is not None:
-        wx1, wy1, wx2, wy2 = window_rect
-        w = wx2 - wx1
-        h = wy2 - wy1
-    else:
-        w, h = REFERENCE_SIZE
+    wx1, wy1, wx2, wy2 = window_rect
+    w = wx2 - wx1
+    h = wy2 - wy1
 
     return (
         round(rx1 * w),

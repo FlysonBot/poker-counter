@@ -18,15 +18,17 @@ import cv2
 import numpy as np
 from loguru import logger
 
-from config import REFERENCE_SIZE
+from config import TEMPLATE_SCALE
 from tracker import Counter, run
 
 
 def video_frames(
     path: str, start_frame: int = 0, speed: float = 1.0
-) -> Iterator[tuple[np.ndarray, float]]:
-    """从视频文件逐帧读取，产出 (灰度图, scale)。
-    scale 根据视频帧高度相对参考分辨率计算，与正式程序的 get_scale() 逻辑一致。
+) -> Iterator[tuple[np.ndarray, float, tuple]]:
+    """从视频文件逐帧读取，产出 (灰度图, scale, window_rect)。
+    window_rect 用视频的实际分辨率构造为 (0, 0, width, height)，
+    region_to_pixels 直接用录制时的分辨率做坐标转换，无需任何 fallback。
+    scale 使用 config.yaml 中的 TEMPLATE_SCALE，与正式程序一致。
     """
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
@@ -35,12 +37,11 @@ def video_frames(
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    scale = frame_h / REFERENCE_SIZE[1]
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    window_rect = (0, 0, w, h)  # 视频帧坐标从 (0,0) 起，宽高即录制分辨率
 
-    logger.info(
-        f"视频信息: {total} 帧, {fps:.1f} fps, 帧高 {frame_h}px, 模板缩放比例 {scale:.3f}"
-    )
+    logger.info(f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}, 模板缩放比例 {TEMPLATE_SCALE:.3f}")
 
     # 跳帧：直接 seek 到指定位置，跳过前面不感兴趣的部分
     if start_frame > 0:
@@ -62,7 +63,7 @@ def video_frames(
         if frame_idx % 30 == 0:
             logger.debug(f"当前帧: {frame_idx}/{total}")
 
-        yield gray, scale
+        yield gray, TEMPLATE_SCALE, window_rect
 
     cap.release()
 

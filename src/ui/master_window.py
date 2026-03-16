@@ -6,10 +6,11 @@ import tkinter as tk
 
 from loguru import logger
 
-from config import GUI
+from config import GUI, HOTKEYS
 from tracker import Counter, Tracker
 from card_types import WindowsType
 from ui.counter_window import CounterWindow, _calculate_offset
+from ui.overlay_manager import OverlayManager
 
 
 class MasterWindow(tk.Tk):
@@ -59,6 +60,12 @@ class MasterWindow(tk.Tk):
         self.update_idletasks()
         x, y = _calculate_offset(self.winfo_width(), self.winfo_height(), config)
         self.geometry(f"+{x}+{y}")
+
+        # 叠加层管理器：热键 c 切换显示/隐藏，首次启动自动显示
+        self._overlay = OverlayManager(self)
+        hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
+        self.bind(f"<KeyPress-{hotkey}>", lambda e: self._overlay.toggle())
+        self._overlay.show_if_first_launch()
 
         logger.success("主控窗口初始化完毕")
 
