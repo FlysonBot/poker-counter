@@ -127,17 +127,20 @@ def verify_counts(counter: Counter, landlord: Player, last_player: Player) -> No
 # ---------------------------------------------------------------------------
 
 
-def live_frames(initial_window_rect) -> Iterator[tuple[GrayImage, float, object]]:
+def live_frames(initial_window_rect, stop_event: Event) -> Iterator[tuple[GrayImage, float, object]]:
     """实时截图帧迭代器，产出 (灰度图, 模板缩放比例, window_rect)。
     每帧重新查询游戏窗口位置，支持用户在游戏中途移动窗口。
     若窗口找不到（已关闭），沿用上一帧的位置继续尝试。
+    收到停止信号后立即退出，不再产出新帧。
     """
     window_rect = initial_window_rect
-    while True:
+    while not stop_event.is_set():
         latest = find_game_window()
         if latest is not None:
             window_rect = latest
-        frame = take_screenshot(window_rect)
+        frame = take_screenshot(window_rect, stop_event)
+        if frame is None:
+            return  # 截图返回 None 说明收到了停止信号
         yield frame, TEMPLATE_SCALE, window_rect
         sleep(SCREENSHOT_INTERVAL)
 
@@ -304,7 +307,7 @@ class Tracker:
         # 避免两次调用之间窗口移动导致截图区域与坐标不一致
         self._stop_event.clear()
         window_rect = find_game_window()
-        frames = live_frames(window_rect)
+        frames = live_frames(window_rect, self._stop_event)
         self._thread = Thread(
             target=run,
             args=(frames, self.counter, self._stop_event, self.on_update, self.mark_potential_bombs),

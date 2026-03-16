@@ -63,16 +63,19 @@ def _grab_gray(bbox: Optional[tuple] = None) -> GrayImage:
     return gray
 
 
-def take_screenshot(window_rect: Optional[Rect] = None) -> GrayImage:
+def take_screenshot(window_rect: Optional[Rect] = None, stop_event=None) -> Optional[GrayImage]:
     """截取游戏窗口截图（灰度）。
     window_rect 为 None 时截全屏（Linux / 窗口未找到时的 fallback）。
-    截图失败（如屏幕超时锁屏）时每 2 秒自动重试，直到成功为止。
+    截图失败（如屏幕超时锁屏）时每 2 秒自动重试，直到成功或收到停止信号为止。
+    收到停止信号时返回 None。
     """
     bbox = window_rect  # PIL bbox 格式与 Rect 一致：(left, top, right, bottom)
     while True:
         try:
             return _grab_gray(bbox)
-        except OSError:
+        except Exception:
+            if stop_event is not None and stop_event.is_set():
+                return None
             logger.warning("截图失败（屏幕可能已超时），2 秒后重试")
             sleep(2)
 
