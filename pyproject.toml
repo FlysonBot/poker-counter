@@ -19,6 +19,7 @@ dependencies = [
     "opencv-python-headless>=4.11.0.86",
     "pillow>=11.1.0",
     "pyyaml>=6.0.2",
+    "ruamel-yaml>=0.19.1",
 ]
 
 [tool.pylint]

@@ -93,7 +93,7 @@ sys.excepthook = _handle_exception
 if __name__ == "__main__":
     # 在日志文件里插入启动分隔线，便于区分同一天内的多次运行
     logger.info(
-        "\n"
+        "\n\n\n"
         + "=" * 80
         + f"\n程序启动 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         + "=" * 80

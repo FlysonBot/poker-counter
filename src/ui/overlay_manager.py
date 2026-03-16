@@ -4,9 +4,9 @@
 将调整后的坐标转换回比例值并写回 config.yaml。
 """
 
-import yaml
 from pathlib import Path
 from loguru import logger
+from ruamel.yaml import YAML
 
 from capture import find_game_window, region_to_pixels
 from config import REGIONS
@@ -103,28 +103,36 @@ class OverlayManager:
         logger.info(f"区域 [{region_name}] 调整为比例坐标: [{rx1}, {ry1}] [{rx2}, {ry2}]")
         self._write_region_to_yaml(region_name, [[rx1, ry1], [rx2, ry2]])
 
+    def _load_yaml(self, path: Path):
+        """用 ruamel.yaml 读取配置，保留注释和格式。"""
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        with open(path, "r", encoding="utf-8") as f:
+            return yaml, yaml.load(f)
+
+    def _save_yaml(self, path: Path, yaml: YAML, data) -> None:
+        """将数据写回 config.yaml，保留原有注释。"""
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f)
+
     def _write_region_to_yaml(self, region_name: str, value: list) -> None:
-        """将单个区域的新坐标写回 config.yaml，保留文件其余内容不变。"""
+        """将单个区域的新坐标写回 config.yaml，保留注释和格式。"""
         path = _config_path()
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
+            yaml, data = self._load_yaml(path)
             data["REGIONS"][region_name] = value
-            with open(path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f, allow_unicode=True, default_flow_style=None, sort_keys=False)
+            self._save_yaml(path, yaml, data)
             logger.success(f"已将区域 [{region_name}] 保存到 config.yaml")
         except Exception as e:
             logger.error(f"写入 config.yaml 失败: {e}")
 
     def _set_first_launch_done(self) -> None:
-        """将 IS_FIRST_LAUNCH 改为 false 并写回 config.yaml。"""
+        """将 IS_FIRST_LAUNCH 改为 false 并写回 config.yaml，保留注释和格式。"""
         path = _config_path()
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
+            yaml, data = self._load_yaml(path)
             data["IS_FIRST_LAUNCH"] = False
-            with open(path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f, allow_unicode=True, default_flow_style=None, sort_keys=False)
+            self._save_yaml(path, yaml, data)
             logger.info("已将 IS_FIRST_LAUNCH 设为 false")
         except Exception as e:
             logger.error(f"写入 IS_FIRST_LAUNCH 失败: {e}")
