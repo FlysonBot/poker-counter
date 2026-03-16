@@ -247,6 +247,8 @@ def run(
         # 每帧同时扫描三个出牌区域，与上一帧对比：
         # 某区域从空变为非空，或内容发生变化，则认为该玩家刚出了牌
         prev: dict[Player, CardCounts] = {p: {} for p in PLAYERS}
+        # 上一帧各区域的原始像素裁剪图，用于跳过未变化区域的模板识别
+        prev_crops: dict[Player, GrayImage] = {}
         last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用
 
         for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
@@ -264,11 +266,18 @@ def run(
                 break
 
             # 同时扫描三个出牌区域
+            # 像素级变化检测：若裁剪图与上一帧完全相同，直接复用上次识别结果，跳过模板匹配
             curr: dict[Player, CardCounts] = {}
             for player in PLAYERS:
-                curr[player] = identify_cards(
-                    frame, region_to_pixels(PLAY_REGIONS[player], window_rect), scale
-                )
+                region = region_to_pixels(PLAY_REGIONS[player], window_rect)
+                x1, y1, x2, y2 = region
+                crop: GrayImage = frame[y1:y2, x1:x2]
+                if player in prev_crops and np.array_equal(crop, prev_crops[player]):
+                    curr[player] = prev[player]  # 像素未变，复用上次结果
+                    logger.debug(f"{player.value} 出牌区像素未变，跳过识别")
+                else:
+                    curr[player] = identify_cards(frame, region, scale)
+                    prev_crops[player] = crop
 
             # 对比变化，记录出牌
             for player in PLAYERS:

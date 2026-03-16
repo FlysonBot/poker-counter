@@ -54,8 +54,11 @@ def _grab_gray(bbox: Optional[tuple] = None) -> GrayImage:
     PIL ImageGrab 返回 RGB 格式，这里先把通道顺序反转成 BGR 再转灰度，
     目的是加重蓝色通道、减轻红色通道对灰度值的影响，
     与旧版的 RGB_as_BGR2GRAY 行为保持一致。
+    include_layered_windows=False 排除叠加层窗口（如本程序自身的悬浮窗），
+    all_screens=True 支持多显示器，
+    两者都不影响光标——PIL ImageGrab 默认不捕获鼠标光标。
     """
-    pil_img: Image.Image = ImageGrab.grab(bbox=bbox)
+    pil_img: Image.Image = ImageGrab.grab(bbox=bbox, include_layered_windows=False, all_screens=True)
     rgb = np.array(pil_img)
     # [:, :, ::-1] 将 RGB 通道顺序反转为 BGR
     bgr_pil = Image.fromarray(rgb[:, :, ::-1])
