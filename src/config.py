@@ -5,7 +5,7 @@
 import sys
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML
 
 
 def _config_dir() -> Path:
@@ -20,8 +20,9 @@ def _config_dir() -> Path:
 
 def _load() -> dict:
     path = _config_dir() / "config.yaml"
+    ryaml = YAML()
     with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return dict(ryaml.load(f))
 
 
 _cfg = _load()
