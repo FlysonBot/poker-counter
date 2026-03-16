@@ -27,7 +27,6 @@ OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的
 
 # 一副完整的牌：除大小王各1张外，其余每种牌4张
 FULL_DECK: CardCounts = {**{card: 4 for card in Card}, Card.JOKER: 2}
-EMPTY_DECK: CardCounts = {card: 0 for card in Card}
 
 
 class Counter:
@@ -127,7 +126,9 @@ def verify_counts(counter: Counter, landlord: Player, last_player: Player) -> No
 # ---------------------------------------------------------------------------
 
 
-def live_frames(initial_window_rect, stop_event: Event) -> Iterator[tuple[GrayImage, float, object]]:
+def live_frames(
+    initial_window_rect: Optional[tuple[int, int, int, int]], stop_event: Event
+) -> Iterator[tuple[GrayImage, float, tuple[int, int, int, int]]]:
     """实时截图帧迭代器，产出 (灰度图, 模板缩放比例, window_rect)。
     每帧重新查询游戏窗口位置，支持用户在游戏中途移动窗口。
     若窗口找不到（已关闭），沿用上一帧的位置继续尝试。
@@ -167,7 +168,7 @@ PLAY_REGIONS = {
 
 
 def run(
-    frames: Iterator[tuple[GrayImage, float, object]],
+    frames: Iterator[tuple[GrayImage, float, tuple[int, int, int, int]]],
     counter: Counter,
     stop_event: Event,
     on_update: Optional[OnUpdateFn] = None,
@@ -191,13 +192,18 @@ def run(
         counter.reset()
         landlord: Optional[Player] = None
 
-        for frame, scale, window_rect in frames:
+        for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
             if stop_event.is_set():
                 return
 
             # 同时检查三个区域，置信度最高的那个就是地主位置
             confidences = {
-                p: match_mark(frame, region_to_pixels(LANDLORD_REGIONS[p], window_rect), Mark.LANDLORD, scale)
+                p: match_mark(
+                    frame,
+                    region_to_pixels(LANDLORD_REGIONS[p], window_rect),
+                    Mark.LANDLORD,
+                    scale,
+                )
                 for p in PLAYERS
             }
             best = max(confidences, key=lambda p: confidences[p])
@@ -216,8 +222,10 @@ def run(
         # ── 识别自己的手牌 ────────────────────────────────────────────────
         # 游戏开始后立即识别自己的手牌并从剩余牌数中扣除，
         # 这样剩余数就代表"除了我自己的牌以外还有多少张在场上"
-        frame, scale, window_rect = next(frames)
-        my_cards = identify_cards(frame, region_to_pixels("my_cards", window_rect), scale)
+        frame, scale, window_rect = next(frames)  # type: GrayImage, float, tuple[int,int,int,int]
+        my_cards = identify_cards(
+            frame, region_to_pixels("my_cards", window_rect), scale
+        )
         logger.info(f"识别到自己的牌: {my_cards}")
         for card, count in my_cards.items():
             counter.mark(card, Player.MIDDLE, count)
@@ -241,14 +249,17 @@ def run(
         prev: dict[Player, CardCounts] = {p: {} for p in PLAYERS}
         last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用
 
-        for frame, scale, window_rect in frames:
+        for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
             if stop_event.is_set():
                 return
 
             # 检测游戏是否结束：底牌区域（三张翻开的牌）出现时说明有人出完牌了
-            end_cards = identify_cards(frame, region_to_pixels("three_displayed_cards", window_rect), scale)
+            end_cards = identify_cards(
+                frame, region_to_pixels("three_displayed_cards", window_rect), scale
+            )
             if end_cards:
                 logger.info(f"游戏结束，底牌区域识别到: {end_cards}")
+                assert landlord is not None
                 verify_counts(counter, landlord, last_player)
                 break
 
@@ -310,7 +321,13 @@ class Tracker:
         frames = live_frames(window_rect, self._stop_event)
         self._thread = Thread(
             target=run,
-            args=(frames, self.counter, self._stop_event, self.on_update, self.mark_potential_bombs),
+            args=(
+                frames,
+                self.counter,
+                self._stop_event,
+                self.on_update,
+                self.mark_potential_bombs,
+            ),
             daemon=True,  # 主线程退出时后端线程自动结束，不会阻止程序退出
         )
         self._thread.start()

@@ -10,7 +10,7 @@ import numpy as np
 from loguru import logger
 from PIL import Image, ImageGrab
 
-from config import GAME_WINDOW_TITLE, REGIONS, TEMPLATE_SCALE
+from config import GAME_WINDOW_TITLE, REGIONS
 
 # 类型别名
 GrayImage = np.ndarray  # shape (H, W), dtype uint8
@@ -63,7 +63,9 @@ def _grab_gray(bbox: Optional[tuple] = None) -> GrayImage:
     return gray
 
 
-def take_screenshot(window_rect: Optional[Rect] = None, stop_event=None) -> Optional[GrayImage]:
+def take_screenshot(
+    window_rect: Optional[Rect] = None, stop_event=None
+) -> Optional[GrayImage]:
     """截取游戏窗口截图（灰度）。
     window_rect 为 None 时截全屏（Linux / 窗口未找到时的 fallback）。
     截图失败（如屏幕超时锁屏）时每 2 秒自动重试，直到成功或收到停止信号为止。

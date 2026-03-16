@@ -24,7 +24,7 @@ from tracker import Counter, run
 
 def video_frames(
     path: str, start_frame: int = 0, speed: float = 1.0
-) -> Iterator[tuple[np.ndarray, float, tuple]]:
+) -> Iterator[tuple[np.ndarray, float, tuple[int, int, int, int]]]:
     """从视频文件逐帧读取，产出 (灰度图, scale, window_rect)。
     window_rect 用视频的实际分辨率构造为 (0, 0, width, height)，
     region_to_pixels 直接用录制时的分辨率做坐标转换，无需任何 fallback。
@@ -41,7 +41,9 @@ def video_frames(
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     window_rect = (0, 0, w, h)  # 视频帧坐标从 (0,0) 起，宽高即录制分辨率
 
-    logger.info(f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}, 模板缩放比例 {TEMPLATE_SCALE:.3f}")
+    logger.info(
+        f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}, 模板缩放比例 {TEMPLATE_SCALE:.3f}"
+    )
 
     # 跳帧：直接 seek 到指定位置，跳过前面不感兴趣的部分
     if start_frame > 0:

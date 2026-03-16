@@ -21,7 +21,9 @@ class OverlayWindow(tk.Toplevel):
     交互：内部拖动移动，边缘拖动缩放（类似系统窗口调整大小）。
     """
 
-    def __init__(self, parent: tk.Tk, region_name: str, x1: int, y1: int, x2: int, y2: int) -> None:
+    def __init__(
+        self, parent: tk.Tk, region_name: str, x1: int, y1: int, x2: int, y2: int
+    ) -> None:
         """
         region_name: 区域名称，显示在窗口上作为标识
         x1, y1, x2, y2: 初始像素坐标（相对于屏幕）
@@ -32,11 +34,11 @@ class OverlayWindow(tk.Toplevel):
         self._on_change_callback = None  # 坐标变化时的回调，由 overlay_manager 注册
 
         # ── 窗口属性 ──────────────────────────────────────────────────────
-        self.overrideredirect(True)       # 去掉系统标题栏
-        self.attributes("-topmost", True) # 始终置顶
+        self.overrideredirect(True)  # 去掉系统标题栏
+        self.attributes("-topmost", True)  # 始终置顶
         self.attributes("-transparentcolor", "white")  # 内部白色区域透明
         self.configure(bg=BORDER_COLOR)
-        self.wm_attributes("-alpha", 0.6) # 整体半透明
+        self.wm_attributes("-alpha", 0.6)  # 整体半透明
 
         # 不抢夺输入焦点，避免遮挡游戏操作
         self.wm_attributes("-disabled", False)
@@ -45,9 +47,12 @@ class OverlayWindow(tk.Toplevel):
         # 用一个白色 frame 填充内部，配合 transparentcolor 实现"只显示边框"的效果
         self._inner = tk.Frame(self, bg="white")
         self._inner.place(
-            x=BORDER, y=BORDER,
-            relwidth=1.0, relheight=1.0,
-            width=-2 * BORDER, height=-2 * BORDER,
+            x=BORDER,
+            y=BORDER,
+            relwidth=1.0,
+            relheight=1.0,
+            width=-2 * BORDER,
+            height=-2 * BORDER,
         )
 
         # 区域名称标签，显示在左上角便于识别
@@ -67,18 +72,18 @@ class OverlayWindow(tk.Toplevel):
         self.geometry(f"{w}x{h}+{x1}+{y1}")
 
         # ── 拖拽状态 ──────────────────────────────────────────────────────
-        self._drag_data = {}   # 记录拖拽起始信息
+        self._drag_data = {}  # 记录拖拽起始信息
 
         # ── 绑定事件 ──────────────────────────────────────────────────────
         # 内部区域：移动窗口
-        self._inner.bind("<Button-1>",   self._move_start)
-        self._inner.bind("<B1-Motion>",  self._move_do)
+        self._inner.bind("<Button-1>", self._move_start)
+        self._inner.bind("<B1-Motion>", self._move_do)
         self._inner.bind("<ButtonRelease-1>", self._on_release)
 
         # 外层边框（self）：调整大小
-        self.bind("<Button-1>",          self._resize_start)
-        self.bind("<B1-Motion>",         self._resize_do)
-        self.bind("<ButtonRelease-1>",   self._on_release)
+        self.bind("<Button-1>", self._resize_start)
+        self.bind("<B1-Motion>", self._resize_do)
+        self.bind("<ButtonRelease-1>", self._on_release)
 
         # 鼠标进入边框区域时改变光标形状，提示可调整大小
         self.bind("<Motion>", self._update_cursor)
@@ -108,30 +113,42 @@ class OverlayWindow(tk.Toplevel):
         """
         w = self.winfo_width()
         h = self.winfo_height()
-        on_left   = x < BORDER
-        on_right  = x > w - BORDER
-        on_top    = y < BORDER
+        on_left = x < BORDER
+        on_right = x > w - BORDER
+        on_top = y < BORDER
         on_bottom = y > h - BORDER
 
-        if on_top and on_left:     return "nw"
-        if on_top and on_right:    return "ne"
-        if on_bottom and on_left:  return "sw"
-        if on_bottom and on_right: return "se"
-        if on_top:                 return "n"
-        if on_bottom:              return "s"
-        if on_left:                return "w"
-        if on_right:               return "e"
+        if on_top and on_left:
+            return "nw"
+        if on_top and on_right:
+            return "ne"
+        if on_bottom and on_left:
+            return "sw"
+        if on_bottom and on_right:
+            return "se"
+        if on_top:
+            return "n"
+        if on_bottom:
+            return "s"
+        if on_left:
+            return "w"
+        if on_right:
+            return "e"
         return ""
 
     def _update_cursor(self, event: tk.Event) -> None:
         """鼠标移动时根据位置更新光标形状，提示用户可以拖拽的方向。"""
         edge = self._get_edge(event.x, event.y)
         cursor_map = {
-            "nw": "top_left_corner",  "se": "bottom_right_corner",
-            "ne": "top_right_corner", "sw": "bottom_left_corner",
-            "n":  "top_side",         "s":  "bottom_side",
-            "w":  "left_side",        "e":  "right_side",
-            "":   "fleur",
+            "nw": "top_left_corner",
+            "se": "bottom_right_corner",
+            "ne": "top_right_corner",
+            "sw": "bottom_left_corner",
+            "n": "top_side",
+            "s": "bottom_side",
+            "w": "left_side",
+            "e": "right_side",
+            "": "fleur",
         }
         self.config(cursor=cursor_map.get(edge, "arrow"))
 
@@ -145,10 +162,10 @@ class OverlayWindow(tk.Toplevel):
             "edge": edge,
             "start_x": event.x_root,
             "start_y": event.y_root,
-            "orig_x":  self.winfo_x(),
-            "orig_y":  self.winfo_y(),
-            "orig_w":  self.winfo_width(),
-            "orig_h":  self.winfo_height(),
+            "orig_x": self.winfo_x(),
+            "orig_y": self.winfo_y(),
+            "orig_w": self.winfo_width(),
+            "orig_h": self.winfo_height(),
         }
 
     def _resize_do(self, event: tk.Event) -> None:
@@ -165,8 +182,10 @@ class OverlayWindow(tk.Toplevel):
         MIN = BORDER * 4  # 最小窗口尺寸，防止缩得太小无法操作
 
         # 根据拖拽的边/角方向计算新的位置和尺寸
-        if "e" in edge: w = max(w + dx, MIN)
-        if "s" in edge: h = max(h + dy, MIN)
+        if "e" in edge:
+            w = max(w + dx, MIN)
+        if "s" in edge:
+            h = max(h + dy, MIN)
         if "w" in edge:
             new_w = max(w - dx, MIN)
             x = x + (w - new_w)

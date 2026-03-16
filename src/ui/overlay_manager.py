@@ -17,6 +17,7 @@ from ui.overlay_window import OverlayWindow
 # config.yaml 的路径（与 config.py 里的逻辑一致）
 def _config_path() -> Path:
     import sys
+
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent / "config.yaml"
     return Path(__file__).parent.parent / "config.yaml"
@@ -48,6 +49,7 @@ class OverlayManager:
         只有叠加层成功显示后才写入 false，避免窗口未显示就消耗掉首次启动机会。
         """
         from config import raw_config
+
         if raw_config.get("IS_FIRST_LAUNCH", False):
             logger.info("首次启动，自动显示区域调整叠加层")
             if self._show():
@@ -86,7 +88,9 @@ class OverlayManager:
         self._visible = False
         logger.info("区域调整叠加层已隐藏")
 
-    def _on_region_changed(self, region_name: str, rect: tuple[int, int, int, int]) -> None:
+    def _on_region_changed(
+        self, region_name: str, rect: tuple[int, int, int, int]
+    ) -> None:
         """用户拖拽完成后触发：把新的像素坐标转换成比例值，写回 config.yaml。"""
         x1, y1, x2, y2 = rect
 
@@ -107,7 +111,9 @@ class OverlayManager:
         rx2 = round((x2 - wl) / ww, 4)
         ry2 = round((y2 - wt) / wh, 4)
 
-        logger.info(f"区域 [{region_name}] 调整为比例坐标: [{rx1}, {ry1}] [{rx2}, {ry2}]")
+        logger.info(
+            f"区域 [{region_name}] 调整为比例坐标: [{rx1}, {ry1}] [{rx2}, {ry2}]"
+        )
         self._write_region_to_yaml(region_name, [[rx1, ry1], [rx2, ry2]])
 
     def _load_yaml(self, path: Path):

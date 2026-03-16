@@ -8,7 +8,7 @@ from loguru import logger
 
 from config import GUI, HOTKEYS
 from tracker import Counter, Tracker
-from card_types import WindowsType
+from card_types import Player, WindowsType
 from ui.counter_window import CounterWindow, _calculate_offset
 from ui.overlay_manager import OverlayManager
 
@@ -93,7 +93,7 @@ class MasterWindow(tk.Tk):
 
         # 延迟 100ms 再重新启用按钮，给后端线程足够时间完成启动，
         # 避免用户立刻点关闭时线程还没准备好
-        self.after(100, lambda: self._btn_switch.config(state="normal"))
+        self.after(100, self._enable_switch)  # type: ignore
         logger.success("记牌器已打开")
 
     def _switch_off(self) -> None:
@@ -111,14 +111,17 @@ class MasterWindow(tk.Tk):
         self._wait_and_enable()
         logger.success("记牌器已关闭")
 
+    def _enable_switch(self) -> None:
+        self._btn_switch.config(state="normal")
+
     def _wait_and_enable(self) -> None:
         # 后端线程是异步的，stop() 只是发信号，线程不会立刻退出。
         # 这里用 after 轮询，确认线程真正结束后才重新启用按钮，
         # 防止用户在旧线程还在跑时再次点开启动新线程。
         if self._tracker.is_running:
-            self.after(200, self._wait_and_enable)
+            self.after(200, self._wait_and_enable)  # type: ignore
         else:
-            self._btn_switch.config(state="normal")
+            self._enable_switch()
 
     # ── 出牌回调（更新窗口颜色）────────────────────────────────────────────
 
@@ -128,22 +131,18 @@ class MasterWindow(tk.Tk):
         红色 = 我没有这张牌，对手可能有炸弹
         黑色 = 这张牌已被某人打出（覆盖红色，说明炸弹已不完整）
         """
-        from card_types import WindowsType as WT
-
         # 先全部重置为默认颜色（黑色），清除上一局残留
         for win in self._windows:
             win.reset_colors()
 
         # 再把潜在炸弹牌在主窗口标红
         for win in self._windows:
-            if win._window_type == WT.MAIN:
+            if win._window_type == WindowsType.MAIN:
                 for card in not_my_cards:
                     win.set_card_color(card, "red")
 
     def _on_card_played(self, player, cards) -> None:
         """tracker 检测到出牌时，更新各窗口的标签颜色。"""
-        from card_types import Player
-
         for win in self._windows:
             for card, count in cards.items():
                 # 主窗口：牌名标签变黑，表示这张牌已被打出过（覆盖初始的红色）
@@ -151,7 +150,9 @@ class MasterWindow(tk.Tk):
                     win.set_card_color(card, "black")
                 # 左/右窗口：同一回合出了多张同种牌时变红（例如出了两张 K，大概率没有更多的 K 了）
                 elif (
-                    win._window_type == WindowsType.LEFT and player == Player.LEFT and count > 1
+                    win._window_type == WindowsType.LEFT
+                    and player == Player.LEFT
+                    and count > 1
                 ):
                     win.set_card_color(card, "red")
                 elif (
@@ -165,4 +166,7 @@ class MasterWindow(tk.Tk):
         """延迟 1 秒后销毁窗口。供后端错误处理器调用——
         直接在后端线程里调用 destroy() 会导致跨线程操作 tkinter 而卡死，
         改用 after() 把销毁操作调度回主线程执行。"""
-        self.after(1000, self.destroy)
+        self.after(1000, self._do_destroy)  # type: ignore
+
+    def _do_destroy(self) -> None:
+        self.destroy()
