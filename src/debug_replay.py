@@ -88,6 +88,10 @@ def main():
     parser.add_argument("--start-frame", type=int, default=0, help="从第几帧开始")
     args = parser.parse_args()
 
+    import tkinter as tk
+    _root = tk.Tk()
+    _root.withdraw()  # 隐藏窗口，仅用于满足 tk.IntVar 的依赖
+
     counter = Counter()
     stop_event = Event()
 
