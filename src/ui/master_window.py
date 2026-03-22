@@ -23,6 +23,7 @@ class MasterWindow(tk.Tk):
             self._counter,
             on_update=self._on_card_played,
             mark_potential_bombs=self._mark_potential_bombs,
+            on_reset=self._on_reset,
         )
         self._windows: list[CounterWindow] = []
 
@@ -125,17 +126,17 @@ class MasterWindow(tk.Tk):
 
     # ── 出牌回调（更新窗口颜色）────────────────────────────────────────────
 
-    def _mark_potential_bombs(self, not_my_cards: set) -> None:
-        """识别完手牌后调用：在主窗口把我没有的牌标红，提示用户对手可能持有该牌的炸弹。
-        每局开始时先重置所有颜色（清除上一局残留），再标红潜在炸弹。
-        红色 = 我没有这张牌，对手可能有炸弹
-        黑色 = 这张牌已被某人打出（覆盖红色，说明炸弹已不完整）
-        """
-        # 先全部重置为默认颜色（黑色），清除上一局残留
+    def _on_reset(self) -> None:
+        """游戏结束/重置时调用：重置所有窗口颜色，与数字重置同步。"""
         for win in self._windows:
             win.reset_colors()
 
-        # 再把潜在炸弹牌在主窗口标红
+    def _mark_potential_bombs(self, not_my_cards: set) -> None:
+        """识别完手牌后调用：在主窗口把我没有的牌标红，提示用户对手可能持有该牌的炸弹。
+        红色 = 我没有这张牌，对手可能有炸弹
+        黑色 = 这张牌已被某人打出（覆盖红色，说明炸弹已不完整）
+        """
+        # 把潜在炸弹牌在主窗口标红
         for win in self._windows:
             if win._window_type == WindowsType.MAIN:
                 for card in not_my_cards:

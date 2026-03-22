@@ -178,6 +178,7 @@ def run(
     stop_event: Event,
     on_update: Optional[OnUpdateFn] = None,
     mark_potential_bombs: Optional[Callable[[set], None]] = None,
+    on_reset: Optional[Callable[[], None]] = None,
 ) -> None:
     """
     游戏主循环。
@@ -195,6 +196,8 @@ def run(
         # 通过检测三个玩家的剩余牌数区域是否出现地主皇冠标记来判断游戏开始
         logger.info("等待游戏开始...")
         counter.reset()
+        if on_reset:
+            on_reset()
         landlord: Optional[Player] = None
 
         for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
@@ -322,10 +325,12 @@ class Tracker:
         counter: Counter,
         on_update: Optional[OnUpdateFn] = None,
         mark_potential_bombs: Optional[Callable[[set], None]] = None,
+        on_reset: Optional[Callable[[], None]] = None,
     ) -> None:
         self.counter = counter
         self.on_update = on_update
         self.mark_potential_bombs = mark_potential_bombs
+        self.on_reset = on_reset
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
 
@@ -354,6 +359,7 @@ class Tracker:
                 self._stop_event,
                 self.on_update,
                 self.mark_potential_bombs,
+                self.on_reset,
             ),
             daemon=True,  # 主线程退出时后端线程自动结束，不会阻止程序退出
         )
