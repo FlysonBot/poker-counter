@@ -31,9 +31,9 @@ def find_game_window() -> Optional[Rect]:
     try:
         import pygetwindow as gw
 
-        wins = gw.getWindowsWithTitle(GAME_WINDOW_TITLE)
+        wins = [w for w in gw.getAllWindows() if GAME_WINDOW_TITLE in w.title]
         if not wins:
-            logger.warning(f"未找到标题含 '{GAME_WINDOW_TITLE}' 的窗口")
+            logger.warning(f"未找到标题含 '{GAME_WINDOW_TITLE}' 的窗口，将使用全屏截图")
             return None
         w = wins[0]
         return (w.left, w.top, w.left + w.width, w.top + w.height)
