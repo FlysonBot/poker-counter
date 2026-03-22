@@ -5,8 +5,8 @@
 
 用法：
     python debug_replay.py recording.mp4
-    python debug_replay.py recording.mp4 --speed 2.0
-    python debug_replay.py recording.mp4 --start-frame 300
+    python debug_replay.py recording.mp4 --sample-interval 0.5
+    python debug_replay.py recording.mp4 --start-time 1:30 --end-time 5:00
 """
 
 import argparse
@@ -33,7 +33,7 @@ logger.remove()
 
 
 def video_frames(
-    path: str, start_frame: int = 0, end_frame: int = 0, speed: float = 1.0, sample_interval: float = 0.0
+    path: str, start_frame: int = 0, end_frame: int = 0, sample_interval: float = 0.0
 ) -> Iterator[tuple[np.ndarray, float, tuple[int, int, int, int]]]:
     """从视频文件逐帧读取，产出 (灰度图, scale, window_rect)。
     window_rect 用视频的实际分辨率构造为 (0, 0, width, height)，
@@ -163,12 +163,6 @@ def make_on_update(counter):
 def main():
     parser = argparse.ArgumentParser(description="记牌器录屏回放调试工具")
     parser.add_argument("video", help="录屏文件路径")
-    parser.add_argument(
-        "--speed",
-        type=float,
-        default=1.0,
-        help="回放倍速（仅影响日志密度，不实际加速）",
-    )
     parser.add_argument("--start-frame", type=int, default=0, help="从第几帧开始")
     parser.add_argument("--start-time", metavar="TIME", help="开始时间戳（秒数、MM:SS 或 HH:MM:SS），优先于 --start-frame")
     parser.add_argument("--end-frame", type=int, default=0, help="到第几帧结束（默认播放到结尾）")
@@ -252,7 +246,7 @@ def main():
     end_frame = parse_timestamp(args.end_time, probe_fps) if args.end_time else args.end_frame
 
     # 用视频帧迭代器替换实时截图，传入同一个 run() 函数
-    frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, speed=args.speed, sample_interval=args.sample_interval)
+    frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
 
     logger.info(f"开始回放: {args.video}")
     try:
