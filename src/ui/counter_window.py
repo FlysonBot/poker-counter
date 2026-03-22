@@ -7,7 +7,10 @@ import sys
 import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ui.master_window import MasterWindow
 
 from loguru import logger
 
@@ -66,7 +69,7 @@ class CounterWindow(tk.Toplevel):
     """记牌器悬浮窗，显示剩余牌数（主窗口）或玩家出牌数（左/右窗口）。"""
 
     def __init__(
-        self, window_type: WindowsType, parent: tk.Tk, counter, tracker
+        self, window_type: WindowsType, parent: "MasterWindow", counter, tracker
     ) -> None:
         """
         counter: tracker.Counter 实例
@@ -170,7 +173,7 @@ class CounterWindow(tk.Toplevel):
                 # 主窗口：颜色变量绑定到牌名标签（变色表示该牌已被打出）
                 self._color_vars[card].trace_add(
                     "write",
-                    lambda *_, c=card, lbl=card_lbl: lbl.config(
+                    lambda *_, c=card, lbl=card_lbl: lbl.config(  # type: ignore[arg-type]
                         fg=self._color_vars[c].get()
                     ),
                 )
@@ -180,7 +183,7 @@ class CounterWindow(tk.Toplevel):
                 # 左右窗口：颜色变量绑定到数量标签（变红表示同一回合出了多张）
                 self._color_vars[card].trace_add(
                     "write",
-                    lambda *_, c=card, lbl=count_lbl: lbl.config(
+                    lambda *_, c=card, lbl=count_lbl: lbl.config(  # type: ignore[arg-type]
                         fg=self._color_vars[c].get()
                     ),
                 )
@@ -216,6 +219,7 @@ class CounterWindow(tk.Toplevel):
             "OPEN_LOG": lambda e: open_latest_log(),
             "OPEN_CONFIG": lambda e: open_config(),
             "RESET": lambda e: self._reset(),
+            "TOGGLE_OVERLAY": lambda e: self._parent._overlay.toggle(),
         }
         for key, callback in hotkey_map.items():
             if key in HOTKEYS:
