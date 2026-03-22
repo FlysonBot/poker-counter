@@ -143,14 +143,11 @@ class MasterWindow(tk.Tk):
                     win.set_card_color(card, "red")
 
     def _on_card_played(self, player, cards) -> None:
-        """tracker 检测到出牌时，更新各窗口的标签颜色。"""
+        """tracker 检测到出牌时，更新左右窗口的标签颜色。"""
         for win in self._windows:
             for card, count in cards.items():
-                # 主窗口：牌名标签变黑，表示这张牌已被打出过（覆盖初始的红色）
-                if win._window_type == WindowsType.MAIN:
-                    win.set_card_color(card, "black")
                 # 左/右窗口：同一回合出了多张同种牌时变红（例如出了两张 K，大概率没有更多的 K 了）
-                elif (
+                if (
                     win._window_type == WindowsType.LEFT
                     and player == Player.LEFT
                     and count > 1
