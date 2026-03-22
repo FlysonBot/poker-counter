@@ -153,7 +153,7 @@ wheels = [
 
 [[package]]
 name = "poker-counter"
-version = "1.1.1"
+version = "2.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "loguru" },

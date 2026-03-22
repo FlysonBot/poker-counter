@@ -1,6 +1,6 @@
 [project]
 name = "poker-counter"
-version = "1.1.1"
+version = "2.1.0"
 description = "一个适用于中游（中国游戏）里的普通54张牌斗地主的记牌器。"
 classifiers = [
     "Development Status :: 4 - Beta",
