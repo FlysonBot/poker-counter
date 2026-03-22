@@ -254,6 +254,8 @@ def run(
         prev: dict[Player, CardCounts] = {p: {} for p in PLAYERS}
         # 上一帧各区域的原始像素裁剪图，用于跳过未变化区域的模板识别
         prev_crops: dict[Player, GrayImage] = {}
+        prev_end_crop: Optional[GrayImage] = None
+        prev_end_cards: CardCounts = {}
         last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用
 
         for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
@@ -261,9 +263,16 @@ def run(
                 return
 
             # 检测游戏是否结束：底牌区域（三张翻开的牌）出现时说明有人出完牌了
-            end_cards = identify_cards(
-                frame, region_to_pixels("three_displayed_cards", window_rect), scale
-            )
+            end_region = region_to_pixels("three_displayed_cards", window_rect)
+            x1, y1, x2, y2 = end_region
+            end_crop: GrayImage = frame[y1:y2, x1:x2]
+            if prev_end_crop is not None and np.array_equal(end_crop, prev_end_crop):
+                end_cards = prev_end_cards
+                logger.debug("底牌区域像素未变，跳过识别")
+            else:
+                end_cards = identify_cards(frame, end_region, scale)
+                prev_end_crop = end_crop
+                prev_end_cards = end_cards
             if end_cards:
                 logger.info(f"游戏结束，底牌区域识别到: {end_cards}")
                 assert landlord is not None

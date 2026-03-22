@@ -120,7 +120,7 @@ def identify_cards(image: Image, region: Region, scale: float = 1.0) -> dict[Car
         # matchTemplate 返回一张与截图等大的热力图，每个像素值是该位置的匹配置信度
         res = cv2.matchTemplate(crop, t, cv2.TM_CCOEFF_NORMED)
         locs = np.where(res >= threshold)
-        raw_matches = [(res[y, x], (x, y)) for x, y in zip(*locs[::-1])]
+        raw_matches = [(float(res[y, x]), (x, y)) for x, y in zip(*locs[::-1])]
 
         # NMS 的最小距离设为模板宽度的一半，确保同一张牌只被计数一次
         min_dist = max(t.shape[1] // 2, 5)
