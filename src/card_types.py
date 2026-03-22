@@ -19,7 +19,6 @@ class Card(Enum):
 
 
 class Mark(Enum):
-    PASS = "PASS"
     LANDLORD = "Landlord"
 
 
