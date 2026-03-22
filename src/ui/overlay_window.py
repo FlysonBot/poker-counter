@@ -7,6 +7,8 @@
 import tkinter as tk
 from loguru import logger
 
+from config import HOTKEYS
+
 # 边框宽度（像素），用于边缘拖拽检测和视觉显示
 BORDER = 8
 # 边框颜色
@@ -87,6 +89,12 @@ class OverlayWindow(tk.Toplevel):
 
         # 鼠标进入边框区域时改变光标形状，提示可调整大小
         self.bind("<Motion>", self._update_cursor)
+
+        # c 键隐藏叠加层（与主窗口热键一致，焦点在叠加窗口上时也能触发）
+        hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
+        toggle_cmd = lambda e: parent._overlay.toggle()
+        for widget in (self, self._inner, self._label):
+            widget.bind(f"<KeyPress-{hotkey}>", toggle_cmd)
 
         logger.debug(f"叠加窗口 [{region_name}] 创建完毕，位置 {x1},{y1} 大小 {w}x{h}")
 
