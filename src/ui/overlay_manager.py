@@ -9,6 +9,7 @@ from loguru import logger
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
+import config as _config
 from capture import find_game_window, region_to_pixels
 from config import REGIONS
 from ui.overlay_window import OverlayWindow
@@ -143,6 +144,8 @@ class OverlayManager:
             flow_value = self._flow_seq([self._flow_seq(pt) for pt in value])
             data["REGIONS"][region_name] = flow_value
             self._save_yaml(path, yaml, data)
+            # 同步更新内存中的 REGIONS，使叠加层重新打开时读到最新坐标
+            _config.REGIONS[region_name] = value
             logger.success(f"已将区域 [{region_name}] 保存到 config.yaml")
         except Exception as e:
             logger.error(f"写入 config.yaml 失败: {e}")
