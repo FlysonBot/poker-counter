@@ -38,7 +38,8 @@ LOG_DIR = get_log_dir()
 
 # 移除 loguru 默认的 stderr handler，重新添加自定义格式的
 logger.remove()
-logger.add(sys.stderr, level=LOG_LEVEL)
+if sys.stderr is not None:
+    logger.add(sys.stderr, level=LOG_LEVEL)
 logger.add(
     LOG_DIR / "{time:YYYY-MM-DD}.log",
     level=LOG_LEVEL,
