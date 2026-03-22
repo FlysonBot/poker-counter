@@ -20,6 +20,7 @@ class Card(Enum):
 
 class Mark(Enum):
     LANDLORD = "Landlord"
+    WARNING = "WARNING"
 
 
 class Player(Enum):

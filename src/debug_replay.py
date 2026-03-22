@@ -21,6 +21,7 @@ from loguru import logger
 
 from capture import region_to_pixels
 from config import LOG_RETENTION, REGIONS, TEMPLATE_SCALE
+from recognize import has_warning
 import tracker
 from tracker import Counter, run
 
@@ -80,6 +81,10 @@ def video_frames(
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
 
         logger.debug(f"当前帧: {frame_idx}/{total}")
+
+        if has_warning(gray, TEMPLATE_SCALE):
+            frame_idx += 1
+            continue  # 检测到警告弹窗，跳过该帧
 
         yield gray, TEMPLATE_SCALE, window_rect
 

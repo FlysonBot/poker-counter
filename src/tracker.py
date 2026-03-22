@@ -13,7 +13,7 @@ from loguru import logger
 
 from capture import find_game_window, region_to_pixels, take_screenshot
 from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, TEMPLATE_SCALE, THRESHOLDS
-from recognize import identify_cards, match_mark
+from recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
 
 GrayImage = np.ndarray
@@ -144,6 +144,9 @@ def live_frames(
         frame = take_screenshot(window_rect, stop_event)
         if frame is None:
             return  # 截图返回 None 说明收到了停止信号
+        if has_warning(frame, TEMPLATE_SCALE):
+            sleep(SCREENSHOT_INTERVAL)
+            continue  # 检测到警告弹窗，跳过该帧
         yield frame, TEMPLATE_SCALE, window_rect
         sleep(SCREENSHOT_INTERVAL)
 

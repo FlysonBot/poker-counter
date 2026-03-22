@@ -90,6 +90,20 @@ def _nms_matches(
 # ---------------------------------------------------------------------------
 
 
+def has_warning(image: Image, scale: float = 1.0) -> bool:
+    """检测画面中是否出现警告弹窗标记。在整张截图上搜索，不限定区域。"""
+    template = MARK_TEMPLATES.get(Mark.WARNING)
+    t = _scale_template(template, scale)
+    if t.shape[0] > image.shape[0] or t.shape[1] > image.shape[1]:
+        return False
+    res = cv2.matchTemplate(image, t, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, _ = cv2.minMaxLoc(res)
+    detected = max_val >= THRESHOLDS.get("warning", 0.9)
+    if detected:
+        logger.debug(f"检测到警告弹窗（置信度 {max_val:.3f}），跳过当前帧")
+    return detected
+
+
 def identify_cards(image: Image, region: Region, scale: float = 1.0) -> dict[Card, int]:
     """在截图的指定区域内识别所有卡牌，返回 {Card: 数量} 字典。
     scale 为模板缩放比例（窗口实际高度 / 参考高度），用于适配不同分辨率。
