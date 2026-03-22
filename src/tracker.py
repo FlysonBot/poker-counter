@@ -51,13 +51,15 @@ class Counter:
             self.right[card].set(0)
         self.total_played = {p: 0 for p in Player}
 
-    def mark(self, card: Card, player: Player, count: int = 1) -> None:
-        new_val = self.remaining[card].get() - count
-        if new_val < 0:
-            logger.warning(f"剩余 {card.value} 数量变为负数，可能有误识别")
-        self.remaining[card].set(new_val)
+    def mark(self, card: Card, player: Player, count: int = 1, affect_remaining: bool = True) -> None:
+        if affect_remaining:
+            new_val = self.remaining[card].get() - count
+            if new_val < 0:
+                logger.warning(f"剩余 {card.value} 数量变为负数，可能有误识别")
+            self.remaining[card].set(new_val)
+        else:
+            new_val = self.remaining[card].get()
 
-        # 只记录左右玩家的出牌，自己（MIDDLE）的牌在初始化时已整体标记
         if player == Player.LEFT:
             self.left[card].set(self.left[card].get() + count)
         elif player == Player.RIGHT:
@@ -281,15 +283,13 @@ def run(
 
             # 对比变化，记录出牌
             for player in PLAYERS:
-                if player == Player.MIDDLE:
-                    continue  # 自己的出牌区会变，但自己的牌已在初始化时整体标记，跳过
-
                 # curr 非空且与上一帧不同，说明该玩家刚打出了新的一手牌
                 # 直接记录 curr 里的全部张数（curr != prev 已保证不会对同一手牌重复计数）
+                # 自己（MIDDLE）的牌已在初始化时从 remaining 整体扣除，出牌不再影响 remaining
                 if curr[player] and curr[player] != prev[player]:
                     logger.info(f"{player.value} 出牌: {curr[player]}")
                     for card, count in curr[player].items():
-                        counter.mark(card, player, count)
+                        counter.mark(card, player, count, affect_remaining=(player != Player.MIDDLE))
                     last_player = player
                     if on_update:
                         on_update(player, curr[player])
