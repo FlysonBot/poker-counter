@@ -278,6 +278,20 @@ def run(
                 prev_end_cards = end_cards
             if end_cards:
                 logger.info(f"游戏结束，底牌区域识别到: {end_cards}")
+                # 底牌与最后一手牌同帧出现，需在 break 前扫描出牌区确定赢家
+                for player in PLAYERS:
+                    if player == Player.MIDDLE:
+                        continue
+                    region = region_to_pixels(PLAY_REGIONS[player], window_rect)
+                    cards_this_frame = identify_cards(frame, region, scale)
+                    if cards_this_frame and cards_this_frame != prev.get(player, {}):
+                        logger.info(f"游戏结束帧检测到 {player.value} 出牌: {cards_this_frame}")
+                        for card, count in cards_this_frame.items():
+                            counter.mark(card, player, count, affect_remaining=(player != Player.MIDDLE))
+                        last_player = player
+                        if on_update:
+                            on_update(player, cards_this_frame)
+                        break
                 assert landlord is not None
                 verify_counts(counter, landlord, last_player)
                 break
