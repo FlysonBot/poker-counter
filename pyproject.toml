@@ -1,6 +1,6 @@
 [project]
 name = "poker-counter"
-version = "1.1.1"
+version = "2.1.0"
 description = "一个适用于中游（中国游戏）里的普通54张牌斗地主的记牌器。"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -15,11 +15,27 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "loguru>=0.7.3",
+    "mss>=10.1.0",
     "numpy>=2.2.4",
     "opencv-python-headless>=4.11.0.86",
-    "pillow>=11.1.0",
-    "pyyaml>=6.0.2",
+    "pygetwindow>=0.0.9",
+    "ruamel-yaml>=0.19.1",
 ]
 
 [tool.pylint]
 disable = ["W0201", "E0203", "C3001", "R0903", "E1101", "R0913", "R0917", "W0718", "C0103", "W0106", "W0212", "R0801"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "Windows"
+venvPath = "."
+venv = ".venv"
+extraPaths = ["src"]
+
+[tool.ruff]
+src = ["src"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.19.0",
+]

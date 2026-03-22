@@ -1,210 +1,274 @@
 """
-记牌器悬浮窗模块，用于显示记牌器的实时信息。
+记牌器悬浮窗。显示剩余牌数和各玩家出牌数，支持拖动和热键。
 """
 
+import os
+import sys
 import tkinter as tk
-from tkinter import ttk
-from typing import Any, Callable, Dict
+from pathlib import Path
+from tkinter import messagebox, ttk
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ui.master_window import MasterWindow
 
 from loguru import logger
 
-from core.backend_thread import BackendThread
-from functions.windows_offset import calculate_offset
-from misc.custom_types import Card, ConfigDict, WindowsType
-from misc.open_file import open_config, open_latest_log
-from models.config import GUI, HOTKEYS
-from models.counters import CardCounter
-from models.labels import LabelProperties
+from config import GUI, HOTKEYS
+from card_types import Card, WindowsType
+
+
+# ---------------------------------------------------------------------------
+# 文件工具
+# ---------------------------------------------------------------------------
+
+
+def _open_file(filepath: str, label: str) -> None:
+    try:
+        os.startfile(filepath)
+    except Exception:
+        logger.error(f"打开{label}失败: {filepath}")
+        messagebox.showerror("错误", f"打开{label}失败，请手动查看：{filepath}")
+
+
+def open_latest_log() -> None:
+    # 打包后 exe 在根目录，开发时 __file__ 在 src/ui/ 下，需要往上两级才到根目录
+    if getattr(sys, "frozen", False):
+        base = Path(sys.executable).parent
+    else:
+        base = Path(__file__).parent.parent
+    log_dir = base / "logs"
+    try:
+        # 按文件名排序，最后一个就是最新的日期
+        files = sorted(log_dir.glob("*.log"))
+        if not files:
+            raise FileNotFoundError
+        _open_file(str(files[-1]), "日志文件")
+    except Exception:
+        logger.error("找不到日志文件")
+        messagebox.showerror("错误", f"找不到日志文件，请手动查看目录：{log_dir}")
+
+
+def open_config() -> None:
+    import sys
+    from pathlib import Path
+
+    if getattr(sys, "frozen", False):
+        path = Path(sys.executable).parent / "config.yaml"
+    else:
+        path = Path(__file__).parent.parent / "config.yaml"
+    _open_file(str(path), "配置文件")
+
+
+# ---------------------------------------------------------------------------
+# 悬浮窗
+# ---------------------------------------------------------------------------
 
 
 class CounterWindow(tk.Toplevel):
-    """
-    记牌器窗口基类，可用于创建主窗口和玩家窗口。
-    """
+    """记牌器悬浮窗，显示剩余牌数（主窗口）或玩家出牌数（左/右窗口）。"""
 
     def __init__(
-        self,
-        window_type: WindowsType,
-        parent: tk.Tk,
+        self, window_type: WindowsType, parent: "MasterWindow", counter, tracker
     ) -> None:
-        """初始化记牌器窗口。
-        :param window_type: 窗口类型 (main, left, right)
-        :param parent: 父窗口
         """
-        super().__init__(parent) if parent else super().__init__()
+        counter: tracker.Counter 实例
+        tracker: tracker.Tracker 实例（用于热键 reset）
+        """
+        super().__init__(parent)
+        self._window_type = window_type
+        self._parent = parent
+        self._counter = counter
+        self._tracker = tracker
 
-        self.PARENT = parent
-        self.WINDOW_TYPE = window_type
+        config = GUI.get(window_type.name, {})
 
-        config = GUI.get(self.WINDOW_TYPE.name, {})
-
-        self._create_table()  # 需要先创建表格才能正确地获取窗口大小
-        self._bind_label_style()
-        self._setup_window_style(config)
-        self._setup_window_position(config)
-        self._setup_binding()
+        # 表格必须在获取窗口尺寸之前创建，否则 winfo_width/height 返回 1
+        self._create_table(config)
+        self._setup_style(config)
+        self._setup_position(config)
+        self._setup_bindings()
 
         logger.success(f"{window_type.value}窗口初始化完毕")
 
-    def _setup_window_style(self, config: ConfigDict) -> None:
-        """设置窗口样式"""
-        self.title(f"记牌器-{self.WINDOW_TYPE.value}")
-        self.attributes("-topmost", True)  # 置顶  # type: ignore
-        self.overrideredirect(True)  # 去掉窗口边框
-        self.configure(bg="white")  # 窗口背景设为白色
-        self.attributes(  # type: ignore
+    # ── 样式与位置 ──────────────────────────────────────────────────────────
+
+    def _setup_style(self, config: dict) -> None:
+        self.title(f"记牌器-{self._window_type.value}")
+        self.attributes("-topmost", True)  # 始终置于最顶层
+        self.overrideredirect(True)  # 去掉系统标题栏和边框
+        self.configure(bg="white")
+        self.attributes(
             "-transparentcolor", "white"
-        )  # 使白色背景变得透明
-        self.attributes(  # type: ignore
-            "-alpha", config.get("OPACITY", 1)
-        )  # 设置透明度
+        )  # 白色背景变透明，实现异形窗口效果
+        self.attributes("-alpha", config.get("OPACITY", 1))  # 整体透明度
 
-    def _setup_window_position(self, config: ConfigDict) -> None:
-        """设置窗口偏移量"""
-        self.update_idletasks()  # 刷新窗口大小
+    def _setup_position(self, config: dict) -> None:
+        # 强制 tkinter 计算好实际尺寸，再读取宽高用于定位
+        self.update_idletasks()
+        w = self.winfo_width()
+        h = self.winfo_height()
+        x, y = _calculate_offset(w, h, config)
+        self.geometry(f"+{x}+{y}")
+        logger.info(f"{self._window_type.value}窗口位置: +{x}+{y}，尺寸: {w}x{h}")
 
-        window_width = self.winfo_width()
-        window_height = self.winfo_height()
+    # ── 表格 ────────────────────────────────────────────────────────────────
 
-        x_offset, y_offset = calculate_offset(
-            window_width,
-            window_height,
-            config.get("OFFSET_X", None),
-            config.get("OFFSET_Y", None),
-            config.get("CENTER_X", None),
-            config.get("CENTER_Y", None),
-        )
+    def _create_table(self, config: dict) -> None:
+        frame = ttk.Frame(self)
+        font_size = config.get("FONT_SIZE", 18)
+        is_main = self._window_type == WindowsType.MAIN
 
-        window_name = self.WINDOW_TYPE.value
-        self.geometry(f"+{x_offset}+{y_offset}")  # 应用偏移量
-        logger.info(f"{window_name}窗口偏移量为：{x_offset}，{y_offset}")
-        logger.info(f"{window_name}窗口大小为：{window_width}x{window_height}")
-
-        logger.success(f"{window_name}窗口属性设置完毕")
-
-    def _setup_binding(self) -> None:
-        """绑定窗口拖动事件和键盘热键"""
-        self.bind("<Button-1>", self._on_drag_start)  # 鼠标左键按下  # type: ignore
-        self.bind("<B1-Motion>", self._on_drag_move)  # 鼠标左键拖动  # type: ignore
-
-        hotkey_dict: dict[str, Callable[[Any], None]] = {  # type: ignore
-            "QUIT": lambda event: self.PARENT.destroy(),
-            "OPEN_LOG": lambda event: open_latest_log(),
-            "OPEN_CONFIG": lambda event: open_config(),
-            "RESET": lambda event: self._reset(),
-        }
-
-        for hotkey, callback in hotkey_dict.items():
-            if hotkey in HOTKEYS:
-                try:
-                    self.bind(f"<KeyPress-{HOTKEYS[hotkey]}>", callback)
-                except Exception:
-                    logger.error(f"热键{hotkey}绑定失败，无法绑定到{HOTKEYS[hotkey]}。")
-
-        logger.success(f"{self.WINDOW_TYPE.value}窗口键盘和鼠标事件绑定成功")
-
-    def _create_table(self) -> None:
-        """创建记牌器表格，显示牌型和数量"""
-        self._table_frame = ttk.Frame(self)
-
-        # 根据窗口类型决定表格方向
-        if self.WINDOW_TYPE == WindowsType.MAIN:
-            self._table_frame.pack(padx=0, pady=0)
-            rows, cols = 2, len(Card)  # 水平布局
+        # 主窗口横向排列（牌名一行，数量一行）；左右窗口竖向排列（每张牌占一行）
+        if is_main:
+            frame.pack(padx=0, pady=0)
+            rows, cols = 2, len(Card)
         else:
-            self._table_frame.pack(padx=0, pady=0, fill="both", expand=True)
-            rows, cols = len(Card), 2  # 垂直布局
+            frame.pack(padx=0, pady=0, fill="both", expand=True)
+            rows, cols = len(Card), 2
 
-        # 获取牌数的函数
-        counter = CardCounter()  # 获取全局记牌器实例
-        get_count: dict[WindowsType, Callable[[Card], tk.Variable]] = {
-            WindowsType.MAIN: lambda card: counter.remaining_counter[card],
-            WindowsType.LEFT: lambda card: counter.player1_counter[card],
-            WindowsType.RIGHT: lambda card: counter.player3_counter[card],
-        }
-        get_count_text = get_count[self.WINDOW_TYPE]
-
-        # 初始化标签
-        self._card_labels: Dict[Card, tk.Label] = {}  # 牌名标签
-        self._count_labels: Dict[Card, tk.Label] = {}  # 数量标签
-        FONT_SIZE = GUI.get(self.WINDOW_TYPE.name, {}).get("FONT_SIZE", 25)
-
-        # 创建标签
-        def create_label(**kwargs: Any) -> tk.Label:
+        def make_label(**kw: Any) -> tk.Label:
             return tk.Label(
-                self._table_frame,
+                frame,
                 anchor="center",
                 relief="solid",
                 highlightbackground="red",
                 highlightthickness=1,
                 width=2,
-                **kwargs,
+                **kw,
             )
 
+        # 每张牌对应一个 StringVar，用于在后端出牌时动态修改标签颜色
+        self._color_vars: dict[Card, tk.StringVar] = {
+            card: tk.StringVar(value="black") for card in Card
+        }
+
+        self._card_labels: dict[Card, tk.Label] = {}
+        self._count_labels: dict[Card, tk.Label] = {}
+
+        # 根据窗口类型决定数量标签绑定哪个计数器变量
+        # textvariable 让标签内容自动跟随 IntVar 变化，无需手动刷新
+        if is_main:
+            get_var = lambda card: self._counter.remaining[card]
+        elif self._window_type == WindowsType.LEFT:
+            get_var = lambda card: self._counter.left[card]
+        else:
+            get_var = lambda card: self._counter.right[card]
+
         for idx, card in enumerate(Card):
-            label_text = card.value if card.value != "JOKER" else "王"
-            card_label = create_label(
-                text=label_text, font=("Arial", FONT_SIZE), bg="lightblue", fg="black"
+            name_text = card.value if card != Card.JOKER else "王"
+            card_lbl = make_label(
+                text=name_text, font=("Arial", font_size), bg="lightblue", fg="black"
             )
-            count_label = create_label(
-                textvariable=get_count_text(card),
-                font=("Arial", FONT_SIZE, "bold"),
+            count_lbl = make_label(
+                textvariable=get_var(card),
+                font=("Arial", font_size, "bold"),
                 bg="lightyellow",
                 fg="black",
             )
 
-            # 根据窗口类型放置标签
-            if self.WINDOW_TYPE == WindowsType.MAIN:
-                card_label.grid(row=0, column=idx, padx=0, pady=0, sticky="nsew")
-                count_label.grid(row=1, column=idx, padx=0, pady=0, sticky="nsew")
+            if is_main:
+                card_lbl.grid(row=0, column=idx, sticky="nsew")
+                count_lbl.grid(row=1, column=idx, sticky="nsew")
+                # 主窗口：颜色变量绑定到牌名标签（变色表示该牌已被打出）
+                self._color_vars[card].trace_add(
+                    "write",
+                    lambda *_, c=card, lbl=card_lbl: lbl.config(  # type: ignore[arg-type]
+                        fg=self._color_vars[c].get()
+                    ),
+                )
             else:
-                card_label.grid(row=idx, column=0, padx=0, pady=0, sticky="nsew")
-                count_label.grid(row=idx, column=1, padx=0, pady=0, sticky="nsew")
+                card_lbl.grid(row=idx, column=0, sticky="nsew")
+                count_lbl.grid(row=idx, column=1, sticky="nsew")
+                # 左右窗口：颜色变量绑定到数量标签（变红表示同一回合出了多张）
+                self._color_vars[card].trace_add(
+                    "write",
+                    lambda *_, c=card, lbl=count_lbl: lbl.config(  # type: ignore[arg-type]
+                        fg=self._color_vars[c].get()
+                    ),
+                )
 
-            self._card_labels[card] = card_label
-            self._count_labels[card] = count_label
+            self._card_labels[card] = card_lbl
+            self._count_labels[card] = count_lbl
 
-        # 设置网格权重，确保列宽/行高一致
+        # 设置网格权重使各格子均匀分布
         for i in range(rows):
-            self._table_frame.grid_rowconfigure(i, weight=1)
+            frame.grid_rowconfigure(i, weight=1)
         for j in range(cols):
-            self._table_frame.grid_columnconfigure(j, weight=1)
+            frame.grid_columnconfigure(j, weight=1)
 
-        logger.success(f"{self.WINDOW_TYPE.value}窗口记牌器表格创建完毕")
+    # ── 颜色更新（供 tracker 回调调用）────────────────────────────────────
 
-    def _bind_label_style(self) -> None:
-        """绑定标签样式更新函数到标签样式变量类"""
-        label_properties = LabelProperties()
-        binding_labels = (
-            self._count_labels  # 对左右两个窗口绑定计数标签
-            if self.WINDOW_TYPE is not WindowsType.MAIN
-            else self._card_labels  # 对主窗口绑定牌名标签
-        )
-        for card, label in binding_labels.items():
-            label_properties.text_color.bind_callback(
-                self.WINDOW_TYPE,
-                card,
-                lambda style, label=label: (label.config(fg=style), None)[1],
-            )
+    def set_card_color(self, card: Card, color: str) -> None:
+        self._color_vars[card].set(color)
 
-    def _on_drag_start(self, event: tk.Event) -> None:  # type: ignore
-        """记录拖动起始位置。
-        :param event: 鼠标事件
-        """
-        self._drag_start_x = event.x
-        self._drag_start_y = event.y
+    def reset_colors(self) -> None:
+        for var in self._color_vars.values():
+            var.set("black")
 
-    def _on_drag_move(self, event: tk.Event) -> None:  # type: ignore
-        """处理窗口拖动。
-        :param event: 鼠标事件
-        """
+    # ── 绑定 ────────────────────────────────────────────────────────────────
 
-        x = self.winfo_x() + (event.x - self._drag_start_x)
-        y = self.winfo_y() + (event.y - self._drag_start_y)
+    def _setup_bindings(self) -> None:
+        # 鼠标拖动：记录起始位置，随鼠标移动更新窗口坐标
+        self.bind("<Button-1>", self._drag_start)
+        self.bind("<B1-Motion>", self._drag_move)
+
+        # 热键：从 config.yaml 读取按键映射，绑定到对应操作
+        hotkey_map = {
+            "QUIT": lambda e: self._parent.destroy(),
+            "OPEN_LOG": lambda e: open_latest_log(),
+            "OPEN_CONFIG": lambda e: open_config(),
+            "RESET": lambda e: self._reset(),
+            "TOGGLE_OVERLAY": lambda e: self._parent._overlay.toggle(),
+        }
+        for key, callback in hotkey_map.items():
+            if key in HOTKEYS:
+                try:
+                    self.bind(f"<KeyPress-{HOTKEYS[key]}>", callback)
+                except Exception:
+                    logger.error(f"热键 {key}={HOTKEYS[key]} 绑定失败")
+
+    def _drag_start(self, event: tk.Event) -> None:
+        # 记录鼠标按下时相对于窗口左上角的偏移，用于后续拖动计算
+        self._drag_x = event.x
+        self._drag_y = event.y
+
+    def _drag_move(self, event: tk.Event) -> None:
+        # 用鼠标当前位置减去起始偏移，得到窗口新的左上角坐标
+        x = self.winfo_x() + (event.x - self._drag_x)
+        y = self.winfo_y() + (event.y - self._drag_y)
         self.geometry(f"+{x}+{y}")
 
     def _reset(self) -> None:
-        """重置记牌器"""
-        backend = BackendThread()  # 获取全局后端线程
-        backend.terminate()
-        backend.start()
+        # 重启后端线程：stop 发出停止信号，start 重新开始等待游戏
+        self._tracker.stop()
+        self._tracker.start()
+
+
+# ---------------------------------------------------------------------------
+# 窗口位置计算
+# ---------------------------------------------------------------------------
+
+
+def _calculate_offset(w: int, h: int, config: dict) -> tuple[int, int]:
+    # config 里 OFFSET 和 CENTER 二选一：
+    # OFFSET 直接指定窗口左上角坐标；CENTER 指定窗口中心坐标（需要减去半个窗口尺寸换算）
+    x = (
+        config.get("OFFSET_X")
+        if config.get("OFFSET_X") is not None
+        else (
+            config.get("CENTER_X", 0) - w // 2
+            if config.get("CENTER_X") is not None
+            else 0
+        )
+    )
+    y = (
+        config.get("OFFSET_Y")
+        if config.get("OFFSET_Y") is not None
+        else (
+            config.get("CENTER_Y", 0) - h // 2
+            if config.get("CENTER_Y") is not None
+            else 0
+        )
+    )
+    return int(x), int(y)
