@@ -23,9 +23,16 @@ Rect = tuple[int, int, int, int]  # (x1, y1, x2, y2) 像素，相对于全屏
 # ---------------------------------------------------------------------------
 
 
-def find_game_window() -> Optional[Rect]:
+def _full_screen_rect() -> Rect:
+    """返回主屏幕的全屏坐标 (0, 0, width, height)。"""
+    with mss.mss() as sct:
+        m = sct.monitors[0]
+        return (0, 0, m["width"], m["height"])
+
+
+def find_game_window() -> Rect:
     """查找游戏窗口，返回其屏幕坐标 (x1, y1, x2, y2)。
-    找不到时返回 None，调用方应 fallback 到全屏截图模式。
+    找不到时 fallback 到全屏坐标。
     仅在 Windows 上可用（依赖 pygetwindow）。
     """
     try:
@@ -34,15 +41,15 @@ def find_game_window() -> Optional[Rect]:
         wins = [w for w in gw.getAllWindows() if GAME_WINDOW_TITLE in w.title]
         if not wins:
             logger.warning(f"未找到标题含 '{GAME_WINDOW_TITLE}' 的窗口，将使用全屏截图")
-            return None
+            return _full_screen_rect()
         w = wins[0]
         return (w.left, w.top, w.left + w.width, w.top + w.height)
     except ImportError:
         logger.warning("pygetwindow 不可用（非 Windows 环境），将截取全屏")
-        return None
+        return _full_screen_rect()
     except Exception as e:
         logger.warning(f"窗口定位失败: {e}")
-        return None
+        return _full_screen_rect()
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +83,7 @@ def take_screenshot(
     收到停止信号时返回 None。
     """
     bbox = window_rect  # PIL bbox 格式与 Rect 一致：(left, top, right, bottom)
+    logger.debug("正在截图...")
     while True:
         try:
             return _grab_gray(bbox)
@@ -94,7 +102,6 @@ def take_screenshot(
 def region_to_pixels(region_name: str, window_rect: Rect) -> Rect:
     """将 config.yaml 中的比例坐标转换为截图内的像素坐标。
     比例坐标是相对于窗口尺寸的（0.0–1.0），乘以实际尺寸得到像素值。
-    window_rect 为 None 时使用参考分辨率（全屏截图的 fallback）。
     """
     (rx1, ry1), (rx2, ry2) = REGIONS[region_name]
 
