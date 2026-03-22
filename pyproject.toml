@@ -34,3 +34,8 @@ extraPaths = ["src"]
 
 [tool.ruff]
 src = ["src"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.19.0",
+]
