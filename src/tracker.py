@@ -328,8 +328,14 @@ class Tracker:
         self._stop_event.clear()
         window_rect = find_game_window()
         frames = live_frames(window_rect, self._stop_event)
+        def _run_safe(*args, **kwargs):
+            try:
+                run(*args, **kwargs)
+            except Exception as e:
+                logger.exception(f"后端线程异常退出: {e}")
+
         self._thread = Thread(
-            target=run,
+            target=_run_safe,
             args=(
                 frames,
                 self.counter,

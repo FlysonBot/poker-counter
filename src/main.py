@@ -4,6 +4,7 @@
 
 import os
 import sys
+import threading
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -62,6 +63,16 @@ def _handle_exception(exc_type, exc_value, exc_tb):
     logger.critical("未处理的异常:\n" + formatted)
 
 
+def _handle_thread_exception(args):
+    """捕获子线程未处理的异常并写入日志。"""
+    if args.exc_type == SystemExit:
+        return
+    formatted = "".join(
+        traceback.format_exception(args.exc_type, args.exc_value, args.exc_tb)
+    )
+    logger.critical(f"子线程 [{args.thread.name}] 未处理的异常:\n" + formatted)
+
+
 def _backend_error_handler(message: str) -> None:
     """loguru ERROR 级别日志的 sink：后端出错时弹窗提示用户并安全退出。
     直接在后端线程里 sys.exit() 只会终止后端线程，不会关闭主窗口，
@@ -85,6 +96,7 @@ def _backend_error_handler(message: str) -> None:
 
 logger.add(_backend_error_handler, level="ERROR")
 sys.excepthook = _handle_exception
+threading.excepthook = _handle_thread_exception
 
 
 # ---------------------------------------------------------------------------
