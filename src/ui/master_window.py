@@ -56,13 +56,23 @@ class MasterWindow(tk.Tk):
             font=("TkDefaultFont", font_size),
         ).pack()
 
+        # 调整 + 帮助并排一行
+        btn_row = tk.Frame(self, bg="white")
+        btn_row.pack()
         tk.Button(
-            self,
-            text="调整区域",
-            command=self._overlay.toggle,
-            width=10,
+            btn_row,
+            text="调整",
+            command=lambda: self._overlay.toggle(),
+            width=4,
             font=("TkDefaultFont", font_size),
-        ).pack()
+        ).pack(side="left")
+        tk.Button(
+            btn_row,
+            text="帮助",
+            command=self._show_help,
+            width=4,
+            font=("TkDefaultFont", font_size),
+        ).pack(side="left")
 
         # update_idletasks 强制 tkinter 计算好窗口实际尺寸，
         # 这样 winfo_width/height 才能返回正确值（否则可能返回 1）
@@ -167,6 +177,51 @@ class MasterWindow(tk.Tk):
                     and count > 1
                 ):
                     win.set_card_color(card, "red")
+
+    def _show_help(self) -> None:
+        """弹出帮助对话框。"""
+        win = tk.Toplevel(self)
+        win.title("帮助")
+        win.attributes("-topmost", True)
+        win.resizable(False, False)
+
+        help_text = (
+            "═══ 颜色说明 ═══\n"
+            "\n"
+            "【主记牌器（顶部横排）】\n"
+            "  红色 = 我手里没有这张牌\n"
+            "  黑色 = 其余牌\n"
+            "\n"
+            "【上家 / 下家记牌器（竖排）】\n"
+            "  红色 = 该玩家同一回合打出了2张以上同种牌\n"
+            "        → 该玩家手里可能已没有更多这张牌\n"
+            "\n"
+            "═══ 热键（需点击任意记牌器窗口后生效）═══\n"
+            "\n"
+            f"  {HOTKEYS.get('TOGGLE_OVERLAY', 'c').upper()}  调整区域叠加层\n"
+            f"  {HOTKEYS.get('RESET', 'r').upper()}  重置记牌器\n"
+            f"  {HOTKEYS.get('OPEN_LOG', 'l').upper()}  打开日志文件\n"
+            f"  {HOTKEYS.get('OPEN_CONFIG', 'o').upper()}  打开配置文件\n"
+            f"  {HOTKEYS.get('QUIT', 'q').upper()}  退出程序\n"
+            "\n"
+            "═══ 程序不工作？ ═══\n"
+            "\n"
+            "1. 确认游戏窗口标题含「斗地主」\n"
+            "2. 点「调整」检查各区域是否对准游戏画面\n"
+            "   粉色边框应覆盖对应区域（出牌区、手牌区等）\n"
+            "3. 打开日志（按 L）查看错误信息\n"
+            "4. 尝试重置（按 R）后重新打开记牌器\n"
+        )
+
+        tk.Label(
+            win,
+            text=help_text,
+            justify="left",
+            font=("TkFixedFont", 10),
+            padx=16,
+            pady=12,
+        ).pack()
+        tk.Button(win, text="关闭", command=win.destroy, width=8).pack(pady=(0, 10))
 
     def delayed_destroy(self) -> None:
         """延迟 1 秒后销毁窗口。供后端错误处理器调用——

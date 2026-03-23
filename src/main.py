@@ -15,6 +15,20 @@ from loguru import logger
 from config import LOG_LEVEL, LOG_RETENTION
 from ui.master_window import MasterWindow
 
+# 部分 tkinter window attribute（如 -transparentcolor）在某些环境下不受支持，
+# monkey-patch attributes() 忽略这些错误，避免因环境差异导致崩溃。
+import tkinter as tk
+_orig_attributes = tk.Wm.wm_attributes
+
+def _safe_attributes(self, *args, **kwargs):
+    try:
+        return _orig_attributes(self, *args, **kwargs)
+    except Exception:
+        pass
+
+tk.Wm.wm_attributes = _safe_attributes  # type: ignore
+tk.Wm.attributes = _safe_attributes  # type: ignore
+
 
 # ---------------------------------------------------------------------------
 # 日志初始化
