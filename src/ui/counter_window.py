@@ -107,8 +107,13 @@ class CounterWindow(tk.Toplevel):
         self.attributes("-alpha", config.get("OPACITY", 1))  # 整体透明度
 
     def _setup_position(self, config: dict) -> None:
-        # 强制 tkinter 计算好实际尺寸，再读取宽高用于定位
-        self.update_idletasks()
+        # 先移到屏幕外，等所有窗口创建完毕后由 master_window 统一调用 reposition()
+        self.geometry("+99999+99999")
+        self._pending_config = config
+
+    def reposition(self) -> None:
+        """所有窗口创建完毕、update_idletasks 之后调用，将窗口移到正确位置。"""
+        config = self._pending_config
         w = self.winfo_width()
         h = self.winfo_height()
         x, y = _calculate_offset(w, h, config)

@@ -104,6 +104,11 @@ class MasterWindow(tk.Tk):
                 win = CounterWindow(wtype, self, self._counter, self._tracker)
                 self._windows.append(win)
 
+        # 所有窗口创建完毕后统一计算尺寸并定位，避免逐个定位时的闪烁
+        self.update_idletasks()
+        for win in self._windows:
+            win.reposition()
+
         # 启动后端识别线程
         self._tracker.start()
 
