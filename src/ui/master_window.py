@@ -2,10 +2,14 @@
 主控窗口。显示开关和退出按钮，管理记牌器窗口和后端线程的生命周期。
 """
 
+import sys
 import tkinter as tk
+from pathlib import Path
 
 from loguru import logger
+from ruamel.yaml import YAML
 
+import config as _config
 from config import GUI, HOTKEYS
 from tracker import Counter, Tracker
 from card_types import Player, WindowsType
@@ -83,6 +87,14 @@ class MasterWindow(tk.Tk):
         hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
         self.bind(f"<KeyPress-{hotkey}>", lambda e: self._overlay.toggle())
         self._overlay.show_if_first_launch()
+
+        # 拖动支持
+        self._drag_start_x = 0
+        self._drag_start_y = 0
+        self._dragging = False
+        self.bind("<Button-1>", self._on_drag_start)
+        self.bind("<B1-Motion>", self._on_drag_move)
+        self.bind("<ButtonRelease-1>", self._on_drag_end)
 
         logger.success("主控窗口初始化完毕")
 
@@ -180,6 +192,54 @@ class MasterWindow(tk.Tk):
                     and count > 1
                 ):
                     win.set_card_color(card, "red")
+
+    # ── 拖动 ────────────────────────────────────────────────────────────────
+
+    _DRAG_THRESHOLD = 10  # 超过此像素距离才视为拖动，否则视为点击
+
+    def _on_drag_start(self, event: tk.Event) -> None:
+        self._drag_start_x = event.x
+        self._drag_start_y = event.y
+        self._dragging = False
+
+    def _on_drag_move(self, event: tk.Event) -> None:
+        dx = event.x - self._drag_start_x
+        dy = event.y - self._drag_start_y
+        if not self._dragging and (abs(dx) > self._DRAG_THRESHOLD or abs(dy) > self._DRAG_THRESHOLD):
+            self._dragging = True
+        if self._dragging:
+            x = self.winfo_x() + dx
+            y = self.winfo_y() + dy
+            self.geometry(f"+{x}+{y}")
+
+    def _on_drag_end(self, event: tk.Event) -> None:
+        if not self._dragging:
+            return
+        self._dragging = False
+        x = self.winfo_x()
+        y = self.winfo_y()
+        try:
+            if getattr(sys, "frozen", False):
+                path = Path(sys.executable).parent / "config.yaml"
+            else:
+                path = Path(__file__).parent.parent / "config.yaml"
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            with open(path, encoding="utf-8") as f:
+                data = yaml.load(f)
+            data["GUI"]["SWITCH"]["OFFSET_X"] = x
+            data["GUI"]["SWITCH"]["OFFSET_Y"] = y
+            for k in ("CENTER_X", "CENTER_Y"):
+                data["GUI"]["SWITCH"].pop(k, None)
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f)
+            _config.GUI["SWITCH"]["OFFSET_X"] = x
+            _config.GUI["SWITCH"]["OFFSET_Y"] = y
+            for k in ("CENTER_X", "CENTER_Y"):
+                _config.GUI["SWITCH"].pop(k, None)
+            logger.debug(f"主控窗口位置已保存: +{x}+{y}")
+        except Exception as e:
+            logger.warning(f"保存主控窗口位置失败: {e}")
 
     def _show_help(self) -> None:
         """弹出帮助对话框。"""
