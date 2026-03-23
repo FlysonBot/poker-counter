@@ -189,7 +189,7 @@ def run(
     - stop_event: 外部停止信号
     - on_update: 每次出牌后的回调（可选，供 UI 或调试工具使用）
     - mark_potential_bombs: 识别完手牌后调用，传入我没有的牌的集合（可选）；
-      没有某种牌意味着对手可能持有该牌的全部 4 张（炸弹），UI 用红色高亮提示用户
+      没有某种牌意味着自己手里没有该牌，UI 用红色高亮提示用户，方便推算对手持牌
     """
 
     while not stop_event.is_set():
@@ -255,7 +255,7 @@ def run(
             )
 
         # 通知 UI 哪些牌不在我手里：
-        # 若我没有某种牌，对手可能持有该牌的全部 4 张（炸弹），主窗口用红色高亮提示
+        # 若我没有某种牌，主窗口用红色高亮提示，方便记忆自己的手牌构成并推算对手持牌
         if mark_potential_bombs:
             not_my_cards = {card for card in Card if card not in my_cards}
             mark_potential_bombs(not_my_cards)
