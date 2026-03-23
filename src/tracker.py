@@ -12,7 +12,8 @@ import numpy as np
 from loguru import logger
 
 from capture import find_game_window, region_to_pixels, take_screenshot
-from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, TEMPLATE_SCALE, THRESHOLDS
+from calibrate import calibrate_scale
+from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
 from recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
 
@@ -130,8 +131,8 @@ def verify_counts(counter: Counter, landlord: Player, last_player: Player) -> No
 
 def live_frames(
     initial_window_rect: Optional[tuple[int, int, int, int]], stop_event: Event
-) -> Iterator[tuple[GrayImage, float, tuple[int, int, int, int]]]:
-    """实时截图帧迭代器，产出 (灰度图, 模板缩放比例, window_rect)。
+) -> Iterator[tuple[GrayImage, tuple[int, int, int, int]]]:
+    """实时截图帧迭代器，产出 (灰度图, window_rect)。
     每帧重新查询游戏窗口位置，支持用户在游戏中途移动窗口。
     若窗口找不到（已关闭），沿用上一帧的位置继续尝试。
     收到停止信号后立即退出，不再产出新帧。
@@ -147,7 +148,7 @@ def live_frames(
         if has_warning(frame, 1.0):
             sleep(SCREENSHOT_INTERVAL)
             continue  # 检测到警告弹窗，跳过该帧
-        yield frame, TEMPLATE_SCALE, window_rect
+        yield frame, window_rect
         sleep(SCREENSHOT_INTERVAL)
 
 
@@ -173,7 +174,7 @@ PLAY_REGIONS = {
 
 
 def run(
-    frames: Iterator[tuple[GrayImage, float, tuple[int, int, int, int]]],
+    frames: Iterator[tuple[GrayImage, tuple[int, int, int, int]]],
     counter: Counter,
     stop_event: Event,
     on_update: Optional[OnUpdateFn] = None,
@@ -182,7 +183,7 @@ def run(
 ) -> None:
     """
     游戏主循环。
-    - frames: 帧迭代器，每次产出 (灰度图, scale, window_rect)；
+    - frames: 帧迭代器，每次产出 (灰度图, window_rect)；
       window_rect 每帧更新，支持用户移动窗口后仍能正确识别
     - counter: 计数状态对象（由调用方持有，以便 UI 绑定）
     - stop_event: 外部停止信号
@@ -199,8 +200,10 @@ def run(
         if on_reset:
             on_reset()
         landlord: Optional[Player] = None
+        frame: GrayImage = np.zeros((1, 1), dtype=np.uint8)
+        window_rect: tuple[int, int, int, int] = (0, 0, 0, 0)
 
-        for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
+        for frame, window_rect in frames:  # type: GrayImage, tuple[int,int,int,int]
             if stop_event.is_set():
                 return
 
@@ -227,10 +230,16 @@ def run(
         if stop_event.is_set():
             return
 
+        # ── 自动校准 scale ────────────────────────────────────────────────
+        # 地主确定后手牌已发完，用当前帧的手牌高度估算模板缩放比例
+        if landlord is None:
+            return  # 帧迭代器耗尽但未找到地主，正常退出
+        scale = calibrate_scale(frame, window_rect)
+
         # ── 识别自己的手牌 ────────────────────────────────────────────────
         # 游戏开始后立即识别自己的手牌并从剩余牌数中扣除，
         # 这样剩余数就代表"除了我自己的牌以外还有多少张在场上"
-        frame, scale, window_rect = next(frames)  # type: GrayImage, float, tuple[int,int,int,int]
+        frame, window_rect = next(frames)  # type: GrayImage, tuple[int,int,int,int]
         my_cards = identify_cards(
             frame, region_to_pixels("my_cards", window_rect), scale
         )
@@ -261,7 +270,7 @@ def run(
         prev_end_cards: CardCounts = {}
         last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用
 
-        for frame, scale, window_rect in frames:  # type: GrayImage, float, tuple[int,int,int,int]
+        for frame, window_rect in frames:  # type: GrayImage, tuple[int,int,int,int]
             if stop_event.is_set():
                 return
 

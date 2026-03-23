@@ -20,7 +20,7 @@ import numpy as np
 from loguru import logger
 
 from capture import region_to_pixels
-from config import LOG_RETENTION, REGIONS, TEMPLATE_SCALE
+from config import LOG_RETENTION, REGIONS
 from recognize import has_warning
 import tracker
 from tracker import Counter, run
@@ -35,11 +35,11 @@ logger.remove()
 
 def video_frames(
     path: str, start_frame: int = 0, end_frame: int = 0, sample_interval: float = 0.0
-) -> Iterator[tuple[np.ndarray, float, tuple[int, int, int, int]]]:
-    """从视频文件逐帧读取，产出 (灰度图, scale, window_rect)。
+) -> Iterator[tuple[np.ndarray, tuple[int, int, int, int]]]:
+    """从视频文件逐帧读取，产出 (灰度图, window_rect)。
     window_rect 用视频的实际分辨率构造为 (0, 0, width, height)，
     region_to_pixels 直接用录制时的分辨率做坐标转换，无需任何 fallback。
-    scale 使用 config.yaml 中的 TEMPLATE_SCALE，与正式程序一致。
+    scale 由 run() 在地主确定后自动校准。
     """
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
@@ -56,7 +56,7 @@ def video_frames(
         logger.info(f"采样间隔: {sample_interval}s（每 {max(1, round(sample_interval * fps))} 帧取一帧）")
 
     logger.info(
-        f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}, 模板缩放比例 {TEMPLATE_SCALE:.3f}"
+        f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}"
     )
 
     # 跳帧：直接 seek 到指定位置，跳过前面不感兴趣的部分
@@ -86,7 +86,7 @@ def video_frames(
             frame_idx += 1
             continue  # 检测到警告弹窗，跳过该帧
 
-        yield gray, TEMPLATE_SCALE, window_rect
+        yield gray, window_rect
 
         frame_idx += 1
 
