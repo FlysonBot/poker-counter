@@ -46,7 +46,7 @@ class MasterWindow(tk.Tk):
             width=10,
             font=("TkDefaultFont", font_size),
         )
-        self._btn_switch.pack()
+        self._btn_switch.pack(fill="x")
 
         tk.Button(
             self,
@@ -54,7 +54,7 @@ class MasterWindow(tk.Tk):
             command=self.destroy,
             width=10,
             font=("TkDefaultFont", font_size),
-        ).pack()
+        ).pack(fill="x")
 
         # 调整 + 帮助并排一行
         btn_row = tk.Frame(self, bg="white")
