@@ -1,0 +1,75 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam ranksep 40
+skinparam nodesep 30
+top to bottom direction
+
+package "入口层" #ffe0cc {
+    component main #ff8c00
+}
+
+package "用户界面层 ui/" #d0e8ff {
+    component master_window #4a90d9
+    component counter_window #4a90d9
+    component overlay_manager #4a90d9
+    component overlay_window #4a90d9
+}
+
+package "业务层" #d9f0d3 {
+    component tracker #3a9e3a
+    component debug_replay #3a9e3a
+}
+
+package "识别层" #f5e6ff {
+    component recognize #9b59b6
+    component calibrate #9b59b6
+    component capture #9b59b6
+}
+
+package "基础层" #f0f0f0 {
+    component config #888888
+    component card_types #888888
+}
+
+' 入口层
+main --> master_window
+main -[#cccccc]-> config
+
+' UI 层
+master_window --> tracker
+master_window --> counter_window
+master_window --> overlay_manager
+master_window -[#cccccc]-> card_types
+master_window -[#cccccc]-> config
+
+counter_window -[#cccccc]-> card_types
+counter_window -[#cccccc]-> config
+
+overlay_manager --> overlay_window
+overlay_manager --> capture
+overlay_manager -[#cccccc]-> config
+
+overlay_window -[#cccccc]-> config
+
+' 业务层
+tracker --> recognize
+tracker --> calibrate
+tracker --> capture
+tracker -[#cccccc]-> card_types
+tracker -[#cccccc]-> config
+
+debug_replay --> tracker
+debug_replay --> recognize
+debug_replay --> capture
+debug_replay -[#cccccc]-> card_types
+debug_replay -[#cccccc]-> config
+
+' 识别层
+recognize -[#cccccc]-> card_types
+recognize -[#cccccc]-> config
+
+calibrate --> capture
+
+capture -[#cccccc]-> config
+
+@enduml

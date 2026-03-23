@@ -1,0 +1,69 @@
+@startuml
+<style>
+activityDiagram {
+  activity {
+    BackgroundColor #d0e8ff
+    BorderColor #4a90d9
+    FontSize 13
+    HorizontalAlignment center
+  }
+  diamond {
+    BackgroundColor #fff3cd
+    BorderColor #e6a817
+    HorizontalAlignment center
+  }
+  swimlane {
+    BorderColor #aaaaaa
+    FontSize 14
+    FontStyle bold
+    HorizontalAlignment center
+  }
+}
+</style>
+
+title 线程架构
+
+|主线程（Tkinter 事件循环）|
+start
+:启动程序，初始化界面;
+:等待用户操作;
+fork
+  :用户点击"打开记牌器"
+  启动后台线程;
+fork again
+  :用户点击"关闭记牌器"
+  设置 stop_event 信号;
+fork again
+  :IntVar 数值变化
+  自动触发界面刷新;
+end fork
+:继续等待用户操作;
+
+|后台线程（游戏主循环）|
+:等待游戏开始
+轮询检测地主标记;
+:校准缩放比例;
+:识别手牌，初始化计数;
+repeat
+  :截图，检测区域变化;
+  if (stop_event 已设置？) then (是)
+    :退出线程;
+    stop
+  endif
+  if (出牌区域有变化？) then (是)
+    :识别新出的牌;
+    :调用 counter.mark()
+    更新 IntVar 数值;
+    note right
+      IntVar 变化会自动
+      通知主线程刷新界面
+      无需手动回调
+    end note
+  endif
+  if (游戏结束？) then (是)
+    :验证计数，重置状态;
+    stop
+  endif
+repeat while (游戏进行中) is (是)
+
+@enduml

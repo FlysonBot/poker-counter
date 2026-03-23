@@ -1,0 +1,61 @@
+@startuml
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor 用户
+participant "MasterWindow\n（界面）" as UI
+participant "Tracker\n（游戏主循环）" as Tracker
+participant "capture\n（截图）" as Capture
+participant "recognize\n（识别）" as Recognize
+participant "Counter\n（计数状态）" as Counter
+participant "CounterWindow\n（显示）" as Display
+
+== 启动 ==
+用户 -> UI : 点击"打开记牌器"
+UI -> Tracker : start()
+Tracker -> Capture : find_game_window()
+Capture --> Tracker : 游戏窗口位置
+
+== 等待游戏开始 ==
+loop 轮询，直到检测到地主标记
+    Tracker -> Capture : take_screenshot()
+    Capture --> Tracker : 截图帧
+    Tracker -> Recognize : match_mark()
+    Recognize --> Tracker : 未检测到 / 检测到地主
+end
+
+== 校准与识别手牌 ==
+Tracker -> Recognize : calibrate_scale()
+Recognize --> Tracker : 缩放比例
+Tracker -> Capture : take_screenshot()
+Capture --> Tracker : 截图帧
+Tracker -> Recognize : identify_cards（手牌区域）
+Recognize --> Tracker : 我的手牌列表
+Tracker -> Counter : mark（手牌，不计入出牌）
+Counter -> Display : IntVar 自动触发刷新
+
+== 游戏主循环 ==
+loop 每隔 0.5 秒
+    Tracker -> Capture : take_screenshot()
+    Capture --> Tracker : 截图帧
+    Tracker -> Tracker : 像素比对（与上一帧）
+    alt 出牌区域有变化
+        Tracker -> Recognize : identify_cards（出牌区域）
+        Recognize --> Tracker : 出牌列表
+        Tracker -> Counter : mark（新出的牌，对应玩家）
+        Counter -> Display : IntVar 自动触发刷新
+    end
+    alt 检测到游戏结束（底牌出现）
+        Tracker -> Tracker : verify_counts()
+        Tracker -> UI : 通知游戏结束
+    end
+end
+
+== 停止 ==
+用户 -> UI : 点击"关闭记牌器"
+UI -> Tracker : stop()
+Tracker --> UI : 后台线程退出
+UI -> Counter : 重置计数
+Counter -> Display : IntVar 自动触发刷新
+
+@enduml

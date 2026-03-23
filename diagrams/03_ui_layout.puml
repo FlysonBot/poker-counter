@@ -1,0 +1,33 @@
+@startuml
+skinparam defaultTextAlignment center
+
+skinparam node {
+    FontSize 13
+    BorderThickness 2
+    BackgroundColor<<control>> #ffe0cc
+    BorderColor<<control>> #ff8c00
+    BackgroundColor<<counter>> #d0e8ff
+    BorderColor<<counter>> #4a90d9
+    BackgroundColor<<overlay>> #f5e6ff
+    BorderColor<<overlay>> #9b59b6
+}
+
+left to right direction
+
+node "<b>主控窗口 MasterWindow</b>\n────────────────\n打开记牌器\n退出程序\n调整　帮助\n\n<i>可拖动，始终置顶</i>" <<control>> as Master
+
+node "<b>区域叠加层 OverlayWindow</b>\n────────────────\n粉色边框覆盖：\n手牌区 / 出牌区 / 剩余牌区\n\n<i>调整模式下显示</i>" <<overlay>> as Overlay
+
+node "<b>主记牌器 CounterWindow</b>\n────────────────\n牌名行：3 4 5 6 7 8 9 10 J Q K A 2 小王 大王\n数量行：剩余张数\n<color:red>红色</color> = 我手里没有这张牌\n\n<i>横向排列，始终置顶</i>" <<counter>> as Main
+
+node "<b>上家记牌器 CounterWindow</b>\n────────────────\n每行：牌名 | 出牌数\n<color:red>红色</color> = 同回合出了多张\n\n<i>纵向排列，始终置顶</i>" <<counter>> as Left
+
+node "<b>下家记牌器 CounterWindow</b>\n────────────────\n每行：牌名 | 出牌数\n<color:red>红色</color> = 同回合出了多张\n\n<i>纵向排列，始终置顶</i>" <<counter>> as Right
+
+' 隐藏箭头控制布局
+Master -[hidden]-> Overlay
+Master -[hidden]down-> Main
+Main -[hidden]down-> Left
+Left -[hidden]-> Right
+
+@enduml

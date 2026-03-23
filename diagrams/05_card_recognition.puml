@@ -1,0 +1,50 @@
+@startuml
+<style>
+activityDiagram {
+  activity {
+    BackgroundColor #d0e8ff
+    BorderColor #4a90d9
+    FontSize 13
+    HorizontalAlignment center
+  }
+  diamond {
+    BackgroundColor #fff3cd
+    BorderColor #e6a817
+    HorizontalAlignment center
+  }
+  swimlane {
+    BorderColor #aaaaaa
+    FontSize 14
+    FontStyle bold
+    HorizontalAlignment center
+  }
+}
+</style>
+
+title 卡牌识别（每帧，对三个出牌区域循环）
+
+start
+:截取出牌区域的像素;
+if (与上一帧像素完全相同？) then (是)
+  :直接复用上次识别结果
+  跳过模板匹配;
+else (否)
+  repeat
+    :按 scale 缩放当前牌型的模板;
+    :matchTemplate 滑动窗口匹配
+    输出热力图（每个像素 = 该位置的匹配置信度）;
+    :提取置信度高于阈值的所有匹配点;
+    if (有匹配点？) then (有)
+      :NMS 非极大值抑制
+      距离过近的只保留置信度最高的
+      避免同一张牌被重复计数;
+      :记录该牌出现次数;
+    endif
+  repeat while (还有未处理的牌型？) is (是)
+  ->否;
+  :缓存本次识别结果;
+endif
+:返回 {牌型: 数量} 字典;
+stop
+
+@enduml

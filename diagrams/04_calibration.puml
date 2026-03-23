@@ -1,0 +1,42 @@
+@startuml
+<style>
+activityDiagram {
+  activity {
+    BackgroundColor #d0e8ff
+    BorderColor #4a90d9
+    FontSize 13
+    HorizontalAlignment center
+  }
+  diamond {
+    BackgroundColor #fff3cd
+    BorderColor #e6a817
+    HorizontalAlignment center
+  }
+  swimlane {
+    BorderColor #aaaaaa
+    FontSize 14
+    FontStyle bold
+    HorizontalAlignment center
+  }
+}
+</style>
+
+title 缩放比例校准（每局一次）
+
+start
+:截取手牌区域
+延伸到帧底部（防止牌被截断）;
+:低亮度二值化
+把每个像素判断为纯黑或纯白
+亮度高于阈值 = 白，否则 = 黑
+让整排手牌连成一大块白色区域;
+:找最大连通块
+即面积最大的白色区域
+也就是整排手牌;
+:水平投影过滤稀疏行
+排除弹出牌造成的噪声;
+:有效行高度 / 参考高度 = 缩放比例 scale;
+note right: 失败时 fallback 到 scale = 1.0
+stop
+
+@enduml
