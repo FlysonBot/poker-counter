@@ -5,9 +5,13 @@
 """
 
 import tkinter as tk
+from typing import TYPE_CHECKING
 from loguru import logger
 
 from config import HOTKEYS
+
+if TYPE_CHECKING:
+    from ui.master_window import MasterWindow
 
 # 边框宽度（像素），用于边缘拖拽检测和视觉显示
 BORDER = 8
@@ -24,7 +28,7 @@ class OverlayWindow(tk.Toplevel):
     """
 
     def __init__(
-        self, parent: tk.Tk, region_name: str, x1: int, y1: int, x2: int, y2: int
+        self, parent: "MasterWindow", region_name: str, x1: int, y1: int, x2: int, y2: int
     ) -> None:
         """
         region_name: 区域名称，显示在窗口上作为标识
@@ -163,6 +167,8 @@ class OverlayWindow(tk.Toplevel):
     def _resize_start(self, event: tk.Event) -> None:
         edge = self._get_edge(event.x, event.y)
         if not edge:
+            # 点在边框内部（非边缘）：改为移动模式
+            self._drag_data = {"mode": "move", "x": event.x, "y": event.y}
             return
         # 记录拖拽起始时的窗口几何信息和鼠标屏幕坐标
         self._drag_data = {
@@ -177,6 +183,11 @@ class OverlayWindow(tk.Toplevel):
         }
 
     def _resize_do(self, event: tk.Event) -> None:
+        if self._drag_data.get("mode") == "move":
+            x = self.winfo_x() + (event.x - self._drag_data["x"])
+            y = self.winfo_y() + (event.y - self._drag_data["y"])
+            self.geometry(f"+{x}+{y}")
+            return
         if self._drag_data.get("mode") != "resize":
             return
 
