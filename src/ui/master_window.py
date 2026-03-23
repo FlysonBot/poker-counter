@@ -56,6 +56,14 @@ class MasterWindow(tk.Tk):
             font=("TkDefaultFont", font_size),
         ).pack()
 
+        tk.Button(
+            self,
+            text="调整区域",
+            command=self._overlay.toggle,
+            width=10,
+            font=("TkDefaultFont", font_size),
+        ).pack()
+
         # update_idletasks 强制 tkinter 计算好窗口实际尺寸，
         # 这样 winfo_width/height 才能返回正确值（否则可能返回 1）
         self.update_idletasks()
