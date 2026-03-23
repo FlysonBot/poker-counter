@@ -144,7 +144,7 @@ def live_frames(
         frame = take_screenshot(window_rect, stop_event)
         if frame is None:
             return  # 截图返回 None 说明收到了停止信号
-        if has_warning(frame, TEMPLATE_SCALE):
+        if has_warning(frame, 1.0):
             sleep(SCREENSHOT_INTERVAL)
             continue  # 检测到警告弹窗，跳过该帧
         yield frame, TEMPLATE_SCALE, window_rect
@@ -210,7 +210,7 @@ def run(
                     frame,
                     region_to_pixels(LANDLORD_REGIONS[p], window_rect),
                     Mark.LANDLORD,
-                    scale,
+                    1.0,
                 )
                 for p in PLAYERS
             }

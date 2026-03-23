@@ -82,7 +82,7 @@ def video_frames(
 
         logger.debug(f"当前帧: {frame_idx}/{total}")
 
-        if has_warning(gray, TEMPLATE_SCALE):
+        if has_warning(gray, 1.0):
             frame_idx += 1
             continue  # 检测到警告弹窗，跳过该帧
 
