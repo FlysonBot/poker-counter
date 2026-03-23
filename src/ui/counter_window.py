@@ -9,11 +9,14 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, Any
 
+from ruamel.yaml import YAML
+
 if TYPE_CHECKING:
     from ui.master_window import MasterWindow
 
 from loguru import logger
 
+import config as _config
 from config import GUI, HOTKEYS
 from card_types import Card, WindowsType
 
@@ -209,9 +212,10 @@ class CounterWindow(tk.Toplevel):
     # ── 绑定 ────────────────────────────────────────────────────────────────
 
     def _setup_bindings(self) -> None:
-        # 鼠标拖动：记录起始位置，随鼠标移动更新窗口坐标
+        # 鼠标拖动：记录起始位置，随鼠标移动更新窗口坐标，释放时保存位置
         self.bind("<Button-1>", self._drag_start)
         self.bind("<B1-Motion>", self._drag_move)
+        self.bind("<ButtonRelease-1>", self._drag_end)
 
         # 热键：从 config.yaml 读取按键映射，绑定到对应操作
         hotkey_map = {
@@ -238,6 +242,36 @@ class CounterWindow(tk.Toplevel):
         x = self.winfo_x() + (event.x - self._drag_x)
         y = self.winfo_y() + (event.y - self._drag_y)
         self.geometry(f"+{x}+{y}")
+
+    def _drag_end(self, event: tk.Event) -> None:
+        """拖动结束时把新位置写回 config.yaml，下次启动时自动恢复。"""
+        x = self.winfo_x()
+        y = self.winfo_y()
+        key = self._window_type.name  # "MAIN" / "LEFT" / "RIGHT"
+        try:
+            if getattr(sys, "frozen", False):
+                path = Path(sys.executable).parent / "config.yaml"
+            else:
+                path = Path(__file__).parent.parent / "config.yaml"
+            yaml = YAML()
+            yaml.preserve_quotes = True
+            with open(path, encoding="utf-8") as f:
+                data = yaml.load(f)
+            data["GUI"][key]["OFFSET_X"] = x
+            data["GUI"][key]["OFFSET_Y"] = y
+            # 清除 CENTER_X/Y，避免与 OFFSET 冲突
+            for k in ("CENTER_X", "CENTER_Y"):
+                data["GUI"][key].pop(k, None)
+            with open(path, "w", encoding="utf-8") as f:
+                yaml.dump(data, f)
+            # 同步更新内存，使关闭/重新打开记牌器时也读到新坐标
+            _config.GUI[key]["OFFSET_X"] = x
+            _config.GUI[key]["OFFSET_Y"] = y
+            for k in ("CENTER_X", "CENTER_Y"):
+                _config.GUI[key].pop(k, None)
+            logger.debug(f"{key} 窗口位置已保存: +{x}+{y}")
+        except Exception as e:
+            logger.warning(f"保存窗口位置失败: {e}")
 
     def _reset(self) -> None:
         # 重启后端线程：stop 发出停止信号，start 重新开始等待游戏
