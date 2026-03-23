@@ -56,23 +56,21 @@ class MasterWindow(tk.Tk):
             font=("TkDefaultFont", font_size),
         ).pack(fill="x")
 
-        # 调整 + 帮助并排一行
+        # 调整 + 帮助并排一行，撑满与上方按钮等宽
         btn_row = tk.Frame(self, bg="white")
-        btn_row.pack()
+        btn_row.pack(fill="x")
         tk.Button(
             btn_row,
             text="调整",
             command=lambda: self._overlay.toggle(),
-            width=4,
             font=("TkDefaultFont", font_size),
-        ).pack(side="left")
+        ).pack(side="left", fill="x", expand=True)
         tk.Button(
             btn_row,
             text="帮助",
             command=self._show_help,
-            width=4,
             font=("TkDefaultFont", font_size),
-        ).pack(side="left")
+        ).pack(side="left", fill="x", expand=True)
 
         # update_idletasks 强制 tkinter 计算好窗口实际尺寸，
         # 这样 winfo_width/height 才能返回正确值（否则可能返回 1）
