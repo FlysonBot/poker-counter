@@ -7,18 +7,20 @@
     python debug_replay.py recording.mp4
     python debug_replay.py recording.mp4 --sample-interval 0.5
     python debug_replay.py recording.mp4 --start-time 1:30 --end-time 5:00
+    python debug_replay.py recording.mp4 --ui
 """
 
 import argparse
 import sys
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 from typing import Iterator
 
 import cv2
 import numpy as np
 from loguru import logger
 
+from card_types import Card, Player
 from capture import region_to_pixels
 from config import LOG_RETENTION, REGIONS
 from recognize import has_warning
@@ -192,6 +194,11 @@ def main():
         metavar="TIME",
         help="--dump-regions 使用的时间戳，格式为秒数、MM:SS 或 HH:MM:SS（优先于 --dump-frame）",
     )
+    parser.add_argument(
+        "--ui",
+        action="store_true",
+        help="显示记牌器悬浮窗，回放结束后保持窗口直到用户关闭",
+    )
     args = parser.parse_args()
 
     level = args.log_level.upper()
@@ -213,34 +220,8 @@ def main():
         return
 
     # 录屏回放不需要 sleep，patch 掉避免浪费时间
-    tracker.sleep = lambda _: None
-
-    import tkinter as tk
-    _root = tk.Tk()
-    _root.withdraw()  # 隐藏窗口，仅用于满足 tk.IntVar 的依赖
-
-    counter = Counter()
-    stop_event = Event()
-
-    def print_result():
-        from card_types import Card as C, Player as P
-        lines = ["====== 本局计牌结果 ======", f"{'牌':>6}  {'剩余':>4}  {'上家':>4}  {'下家':>4}", "-" * 30]
-        for card in C:
-            r = counter.remaining[card].get()
-            l = counter.left[card].get()
-            ri = counter.right[card].get()
-            lines.append(f"{card.value:>6}  {r:>4}  {l:>4}  {ri:>4}")
-        lines.append(f"总剩余: {counter.total_remaining}")
-        for player in P:
-            lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
-        logger.info("\n" + "\n".join(lines))
-
-    _original_reset = counter.reset
-    def _reset_with_print():
-        if any(v > 0 for v in counter.total_played.values()):
-            print_result()
-        _original_reset()
-    counter.reset = _reset_with_print
+    # tracker 用 `from time import sleep`，需直接替换模块内的名称才能生效
+    tracker.sleep = lambda _: None  # type: ignore
 
     # 解析开始/结束时间戳（需要先探一下 fps）
     cap_probe = cv2.VideoCapture(args.video)
@@ -250,18 +231,137 @@ def main():
     start_frame = parse_timestamp(args.start_time, probe_fps) if args.start_time else args.start_frame
     end_frame = parse_timestamp(args.end_time, probe_fps) if args.end_time else args.end_frame
 
-    # 用视频帧迭代器替换实时截图，传入同一个 run() 函数
-    frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
+    if args.ui:
+        import tkinter as tk
+        _orig_attributes = tk.Wm.wm_attributes
+        def _safe_attributes(self, *args, **kwargs):
+            try:
+                return _orig_attributes(self, *args, **kwargs)
+            except Exception:
+                pass
+        tk.Wm.wm_attributes = _safe_attributes  # type: ignore
+        tk.Wm.attributes = _safe_attributes  # type: ignore
 
-    logger.info(f"开始回放: {args.video}")
-    try:
-        run(frames, counter, stop_event, on_update=make_on_update(counter))
-    except StopIteration:
-        pass
-    except KeyboardInterrupt:
-        logger.info("用户中断")
+        from ui.master_window import MasterWindow
 
-    pass
+        master = MasterWindow()
+        counter = master._counter
+        stop_event = Event()
+
+        def print_result():
+            left_win = next((w for w in master._windows if w._window_type.name == "LEFT"), None)
+            right_win = next((w for w in master._windows if w._window_type.name == "RIGHT"), None)
+            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>2}  {'上家估':>2}  {'下家':>2}  {'下家估':>2}  {'剩余':>2}", "-" * 42]
+            for card in Card:
+                r = counter.remaining[card].get()
+                l = counter.left[card].get()
+                ri = counter.right[card].get()
+                le = left_win._estimate_vars[card].get() if left_win else "?"
+                re = right_win._estimate_vars[card].get() if right_win else "?"
+                lines.append(f"{card.value:>6}  {l:>4}  {le:>5}  {ri:>5}  {re:>5}  {r:>4}")
+            lines.append(f"总剩余: {counter.total_remaining}")
+            for player in Player:
+                lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
+            logger.info("\n" + "\n".join(lines))
+
+        _original_reset = counter.reset
+        def _reset_with_print():
+            if any(v > 0 for v in counter.total_played.values()):
+                print_result()
+            _original_reset()
+            master._on_reset()
+        counter.reset = _reset_with_print
+
+        frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
+
+        # patch 掉所有可能干扰 replay 的操作（保留退出），必须在 _switch_on 之前
+        # 这样 _switch_on 内部调度的 after(100, _enable_switch) 也会被 patch 掉
+        master._enable_switch = lambda: None
+        master._switch_on_real = master._switch_on
+
+        def _switch_on_once():
+            master._switch_on_real()
+            master._switch_on = lambda: None
+            master._switch_off = lambda: None
+            master._overlay.toggle = lambda: None
+            for win in master._windows:
+                win._reset = lambda: None
+                win.protocol("WM_DELETE_WINDOW", lambda: None)
+            # 禁用调整按钮（btn_row Frame 里的第一个 Button）
+            for widget in master.winfo_children():
+                if isinstance(widget, tk.Frame):
+                    buttons = [c for c in widget.winfo_children() if isinstance(c, tk.Button)]
+                    if buttons:
+                        buttons[0].config(state="disabled")
+                    break
+
+        master._switch_on = _switch_on_once
+
+        # 创建并显示记牌器悬浮窗，然后立即停掉实时识别线程（replay 自己管帧）
+        master._switch_on()
+        master._tracker.stop()
+
+        def _replay_thread():
+            logger.info(f"开始回放: {args.video}")
+            try:
+                _log_update = make_on_update(counter)
+                def _on_update(player, cards):
+                    _log_update(player, cards)
+                    master._on_card_played(player, cards)
+
+                run(
+                    frames,
+                    counter,
+                    stop_event,
+                    on_update=_on_update,
+                    mark_potential_bombs=master._mark_potential_bombs,
+                    on_reset=master._on_reset,
+                )
+            except StopIteration:
+                pass
+            except KeyboardInterrupt:
+                pass
+            logger.info("回放结束，窗口保持显示，关闭窗口或按 Q 退出")
+
+        Thread(target=_replay_thread, daemon=True).start()
+        master.mainloop()
+
+    else:
+        import tkinter as tk
+        _root = tk.Tk()
+        _root.withdraw()  # 隐藏窗口，仅用于满足 tk.IntVar 的依赖
+
+        counter = Counter()
+        stop_event = Event()
+
+        def print_result():
+            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>3}  {'下家':>4}  {'剩余':>3}", "-" * 30]
+            for card in Card:
+                r = counter.remaining[card].get()
+                l = counter.left[card].get()
+                ri = counter.right[card].get()
+                lines.append(f"{card.value:>6}  {l:>4}  {ri:>5}  {r:>4}")
+            lines.append(f"总剩余: {counter.total_remaining}")
+            for player in Player:
+                lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
+            logger.info("\n" + "\n".join(lines))
+
+        _original_reset = counter.reset
+        def _reset_with_print():
+            if any(v > 0 for v in counter.total_played.values()):
+                print_result()
+            _original_reset()
+        counter.reset = _reset_with_print
+
+        frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
+
+        logger.info(f"开始回放: {args.video}")
+        try:
+            run(frames, counter, stop_event, on_update=make_on_update(counter))
+        except StopIteration:
+            pass
+        except KeyboardInterrupt:
+            logger.info("用户中断")
 
 
 if __name__ == "__main__":
