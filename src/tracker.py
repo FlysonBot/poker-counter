@@ -20,6 +20,7 @@ from card_types import Card, Mark, Player
 GrayImage = np.ndarray
 CardCounts = dict[Card, int]
 OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的回调
+OnGameEndFn = Callable[[Player, Player], None]  # 游戏结束时的回调，传入 (winner, landlord)
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +181,7 @@ def run(
     on_update: Optional[OnUpdateFn] = None,
     mark_potential_bombs: Optional[Callable[[set], None]] = None,
     on_reset: Optional[Callable[[], None]] = None,
+    on_game_end: Optional[OnGameEndFn] = None,
 ) -> None:
     """
     游戏主循环。
@@ -303,6 +305,8 @@ def run(
                         break
                 assert landlord is not None
                 verify_counts(counter, landlord, last_player)
+                if on_game_end:
+                    on_game_end(last_player, landlord)
                 break
 
             # 同时扫描三个出牌区域
@@ -349,11 +353,13 @@ class Tracker:
         on_update: Optional[OnUpdateFn] = None,
         mark_potential_bombs: Optional[Callable[[set], None]] = None,
         on_reset: Optional[Callable[[], None]] = None,
+        on_game_end: Optional[OnGameEndFn] = None,
     ) -> None:
         self.counter = counter
         self.on_update = on_update
         self.mark_potential_bombs = mark_potential_bombs
         self.on_reset = on_reset
+        self.on_game_end = on_game_end
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
 
@@ -383,6 +389,7 @@ class Tracker:
                 self.on_update,
                 self.mark_potential_bombs,
                 self.on_reset,
+                self.on_game_end,
             ),
             daemon=True,  # 主线程退出时后端线程自动结束，不会阻止程序退出
         )

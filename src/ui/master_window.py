@@ -12,7 +12,7 @@ from ruamel.yaml import YAML
 import config as _config
 from config import GUI, HOTKEYS
 from tracker import Counter, Tracker
-from card_types import Player, WindowsType
+from card_types import Card, Player, WindowsType
 from ui.counter_window import CounterWindow, _calculate_offset
 from ui.overlay_manager import OverlayManager
 
@@ -28,6 +28,7 @@ class MasterWindow(tk.Tk):
             on_update=self._on_card_played,
             mark_potential_bombs=self._mark_potential_bombs,
             on_reset=self._on_reset,
+            on_game_end=self._on_game_end,
         )
         self._windows: list[CounterWindow] = []
 
@@ -210,6 +211,66 @@ class MasterWindow(tk.Tk):
                 for win in self._windows:
                     if win._window_type == other_wintype:
                         win.set_estimate(card, remaining, "low")
+
+    def _on_game_end(self, winner: Player, landlord: Player) -> None:
+        """游戏结束时，若赢家是左或右玩家，对比首次估算与实际出牌数。"""
+        if winner == Player.MIDDLE:
+            logger.info("自己获胜，无法验证对手估算")
+            return
+
+        winner_wintype = WindowsType.LEFT if winner == Player.LEFT else WindowsType.RIGHT
+        loser_wintype = WindowsType.RIGHT if winner == Player.LEFT else WindowsType.LEFT
+
+        winner_played = self._counter.left if winner == Player.LEFT else self._counter.right
+        loser_played = self._counter.right if winner == Player.LEFT else self._counter.left
+
+        winner_win = next((w for w in self._windows if w._window_type == winner_wintype), None)
+        loser_win = next((w for w in self._windows if w._window_type == loser_wintype), None)
+
+        lines = [
+            f"====== 估算误差分析（{winner.value}获胜）======",
+            f"{'牌':>6}  {'胜-实':>2}  {'胜-估':>2}  {'胜-差':>2}  {'败-实':>2}  {'败-估':>2}  {'败-差':>2}",
+            "-" * 52,
+        ]
+        w_errors, l_errors = [], []
+        for card in Card:
+            w_actual = winner_played[card].get()
+            l_played = loser_played[card].get()
+            l_actual = l_played + self._counter.remaining[card].get()
+
+            w_est = winner_win._first_estimate.get(card) if winner_win else None
+            l_est = loser_win._first_estimate.get(card) if loser_win else None
+
+            w_est_str = str(w_est) if w_est is not None else "?"
+            l_est_str = str(l_est) if l_est is not None else "?"
+            w_err = w_actual - w_est if w_est is not None else None
+            l_err = l_actual - l_est if l_est is not None else None
+            w_err_str = str(w_err) if w_err is not None else "?"
+            l_err_str = str(l_err) if l_err is not None else "?"
+
+            if w_err is not None:
+                w_errors.append(w_err)
+            if l_err is not None:
+                l_errors.append(l_err)
+
+            lines.append(
+                f"{card.value:>6}  {w_actual:>5}  {w_est_str:>5}  {w_err_str:>5}  {l_actual:>5}  {l_est_str:>5}  {l_err_str:>5}"
+            )
+
+        total = len(list(Card))
+        loser = Player.RIGHT if winner == Player.LEFT else Player.LEFT
+        for label, errors in [(winner.value, w_errors), (loser.value, l_errors)]:
+            n = len(errors)
+            coverage = f"{n}/{total}"
+            if n > 0:
+                mae = sum(abs(e) for e in errors) / n
+                over = sum(1 for e in errors if e < 0)   # 估算 > 实际
+                under = sum(1 for e in errors if e > 0)  # 估算 < 实际
+                lines.append(f"{label}: 覆盖率={coverage}  MAE={mae:.2f}  高估={over}张 低估={under}张")
+            else:
+                lines.append(f"{label}: 覆盖率={coverage}  （无估算数据）")
+
+        logger.info("\n" + "\n".join(lines))
 
     # ── 拖动 ────────────────────────────────────────────────────────────────
 

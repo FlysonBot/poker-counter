@@ -251,14 +251,14 @@ def main():
         def print_result():
             left_win = next((w for w in master._windows if w._window_type.name == "LEFT"), None)
             right_win = next((w for w in master._windows if w._window_type.name == "RIGHT"), None)
-            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>2}  {'上家估':>2}  {'下家':>2}  {'下家估':>2}  {'剩余':>2}", "-" * 42]
+            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>2}  {'下家':>3}  {'剩余':>2}  {'上家估':>2}  {'下家估':>2}", "-" * 42]
             for card in Card:
                 r = counter.remaining[card].get()
                 l = counter.left[card].get()
                 ri = counter.right[card].get()
                 le = left_win._estimate_vars[card].get() if left_win else "?"
                 re = right_win._estimate_vars[card].get() if right_win else "?"
-                lines.append(f"{card.value:>6}  {l:>4}  {le:>5}  {ri:>5}  {re:>5}  {r:>4}")
+                lines.append(f"{card.value:>6}  {l:>4}  {ri:>5}  {r:>4}  {le:>5}  {re:>6}")
             lines.append(f"总剩余: {counter.total_remaining}")
             for player in Player:
                 lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
@@ -316,6 +316,7 @@ def main():
                     on_update=_on_update,
                     mark_potential_bombs=master._mark_potential_bombs,
                     on_reset=master._on_reset,
+                    on_game_end=master._on_game_end,
                 )
             except StopIteration:
                 pass

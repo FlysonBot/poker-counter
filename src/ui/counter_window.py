@@ -172,6 +172,8 @@ class CounterWindow(tk.Toplevel):
                 card: tk.StringVar(value="black") for card in Card
             }
             self._estimate_labels: dict[Card, tk.Label] = {}
+            # 首次估算快照，用于游戏结束时的误差分析
+            self._first_estimate: dict[Card, int] = {}
 
             # 列标题行（占第 0 行）
             header_font = ("Arial", font_size - 2)
@@ -262,9 +264,12 @@ class CounterWindow(tk.Toplevel):
             for card in Card:
                 self._estimate_vars[card].set("?")
                 self._estimate_color_vars[card].set("black")
+            self._first_estimate.clear()
 
     def set_estimate(self, card: Card, value: int, confidence: str) -> None:
         """更新估算列。confidence: 'low'=红色, 'high'=绿色, 其他=黑色。"""
+        if confidence == "low" and card not in self._first_estimate:
+            self._first_estimate[card] = value
         color_map = {"low": "red", "high": "green"}
         self._estimate_vars[card].set(str(value))
         self._estimate_color_vars[card].set(color_map.get(confidence, "black"))
