@@ -133,7 +133,7 @@ class CounterWindow(tk.Toplevel):
             rows, cols = 2, len(Card)
         else:
             frame.pack(padx=0, pady=0, fill="both", expand=True)
-            rows, cols = len(Card), 2
+            rows, cols = len(Card) + 1, 3  # +1 for header row, +1 col for estimate
 
         def make_label(**kw: Any) -> tk.Label:
             return tk.Label(
@@ -163,6 +163,33 @@ class CounterWindow(tk.Toplevel):
         else:
             get_var = lambda card: self._counter.right[card]
 
+        # 左右窗口额外的"剩"列：StringVar 存显示值，颜色 StringVar 存置信度颜色
+        if not is_main:
+            self._estimate_vars: dict[Card, tk.StringVar] = {
+                card: tk.StringVar(value="?") for card in Card
+            }
+            self._estimate_color_vars: dict[Card, tk.StringVar] = {
+                card: tk.StringVar(value="black") for card in Card
+            }
+            self._estimate_labels: dict[Card, tk.Label] = {}
+
+            # 列标题行（占第 0 行）
+            header_font = ("Arial", font_size - 2)
+            for col_idx, header_text in enumerate(["牌", "出", "剩"]):
+                header_lbl = tk.Label(
+                    frame,
+                    text=header_text,
+                    anchor="center",
+                    relief="solid",
+                    highlightbackground="red",
+                    highlightthickness=1,
+                    width=2,
+                    font=header_font,
+                    bg="lightgray",
+                    fg="black",
+                )
+                header_lbl.grid(row=0, column=col_idx, sticky="nsew")
+
         for idx, card in enumerate(Card):
             name_text = card.value if card != Card.JOKER else "王"
             card_lbl = make_label(
@@ -186,8 +213,10 @@ class CounterWindow(tk.Toplevel):
                     ),
                 )
             else:
-                card_lbl.grid(row=idx, column=0, sticky="nsew")
-                count_lbl.grid(row=idx, column=1, sticky="nsew")
+                # 有标题行，数据行从第 1 行开始
+                row = idx + 1
+                card_lbl.grid(row=row, column=0, sticky="nsew")
+                count_lbl.grid(row=row, column=1, sticky="nsew")
                 # 左右窗口：颜色变量绑定到数量标签（变红表示同一回合出了多张）
                 self._color_vars[card].trace_add(
                     "write",
@@ -195,6 +224,22 @@ class CounterWindow(tk.Toplevel):
                         fg=self._color_vars[c].get()
                     ),
                 )
+
+                # "剩"列估算标签
+                est_lbl = make_label(
+                    textvariable=self._estimate_vars[card],
+                    font=("Arial", font_size, "bold"),
+                    bg="lightyellow",
+                    fg="black",
+                )
+                est_lbl.grid(row=row, column=2, sticky="nsew")
+                self._estimate_color_vars[card].trace_add(
+                    "write",
+                    lambda *_, c=card, lbl=est_lbl: lbl.config(  # type: ignore[arg-type]
+                        fg=self._estimate_color_vars[c].get()
+                    ),
+                )
+                self._estimate_labels[card] = est_lbl
 
             self._card_labels[card] = card_lbl
             self._count_labels[card] = count_lbl
@@ -213,6 +258,16 @@ class CounterWindow(tk.Toplevel):
     def reset_colors(self) -> None:
         for var in self._color_vars.values():
             var.set("black")
+        if self._window_type != WindowsType.MAIN:
+            for card in Card:
+                self._estimate_vars[card].set("?")
+                self._estimate_color_vars[card].set("black")
+
+    def set_estimate(self, card: Card, value: int, confidence: str) -> None:
+        """更新估算列。confidence: 'low'=红色, 'high'=绿色, 其他=黑色。"""
+        color_map = {"low": "red", "high": "green"}
+        self._estimate_vars[card].set(str(value))
+        self._estimate_color_vars[card].set(color_map.get(confidence, "black"))
 
     # ── 绑定 ────────────────────────────────────────────────────────────────
 

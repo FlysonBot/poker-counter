@@ -89,14 +89,14 @@ GUI:
     DISPLAY: true
     OPACITY: 0.9
     FONT_SIZE: 18
-    CENTER_X: 205
+    CENTER_X: 181
     CENTER_Y: 456
 
   RIGHT: # 下家记牌器（竖排，显示下家出过的牌）
     DISPLAY: true
     OPACITY: 0.9
     FONT_SIZE: 18
-    OFFSET_X: 1450    # 紧靠屏幕右侧
+    OFFSET_X: 1426    # 紧靠屏幕右侧
     CENTER_Y: 456
 
   SWITCH: # 开关窗口（打开/关闭记牌器的控制面板）
