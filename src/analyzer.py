@@ -41,56 +41,59 @@ class Estimate:
 class Analyzer:
     """
     根据出牌事件推算对手持牌估算，并在游戏结束时输出误差分析。
-
-    on_card_played(player, cards) -> list[(player, card, value, confidence)]
-        返回需要更新的估算列表，UI 层据此调用 set_estimate()。
-
-    on_game_end(winner) -> None
-        计算并打印误差分析日志。
-
-    reset() -> None
-        清空所有估算状态。
+    每条推算规则是独立的方法，自行决定更新哪些估算以及是否记录到误差分析快照。
     """
 
     def __init__(self, counter: Counter) -> None:
         self._counter = counter
-        # 首次估算快照：{player: {card: int}}，仅记录 low confidence 的首次估算
-        self._first_estimate: dict[Player, dict[Card, int]] = {
+        # 误差分析快照：每张牌对每位玩家的估算总持牌数，None 表示无法推算
+        self._estimated_total: dict[Player, dict[Card, int]] = {
             Player.LEFT: {},
             Player.RIGHT: {},
         }
 
     def reset(self) -> None:
-        for d in self._first_estimate.values():
+        for d in self._estimated_total.values():
             d.clear()
+
+    def _record_total(self, player: Player, card: Card, value: int) -> None:
+        """记录首次推算出的总持牌数，供游戏结束时误差分析使用。只记录首次。"""
+        if card not in self._estimated_total[player]:
+            self._estimated_total[player][card] = value
 
     def on_card_played(
         self, player: Player, cards: CardCounts
     ) -> list[tuple[Player, Card, int, str]]:
-        """
-        处理出牌事件，返回需要更新的估算列表。
-        每项为 (target_player, card, value, confidence)。
-        """
+        """处理出牌事件，返回需要更新的估算列表，每项为 (target_player, card, value, confidence)。"""
         updates: list[tuple[Player, Card, int, str]] = []
         other = Player.RIGHT if player == Player.LEFT else Player.LEFT
 
-        for card, count in cards.items():
+        for card in cards:
             remaining = self._counter.remaining[card].get()
-
-            if remaining == 0:
-                # remaining 归零：两位对手都没有了，高置信度
-                for target in (Player.LEFT, Player.RIGHT):
-                    updates.append((target, card, 0, "high"))
-            elif player in (Player.LEFT, Player.RIGHT):
-                # 出牌方打出后，另一方最多持有 remaining 张，低置信度
-                updates.append((other, card, remaining, "low"))
-
-        # 记录 low confidence 首次估算
-        for target, card, value, confidence in updates:
-            if confidence == "low" and card not in self._first_estimate[target]:
-                self._first_estimate[target][card] = value
+            self._rule_remaining_zero(card, remaining, updates)
+            self._rule_other_has_at_most_remaining(player, other, card, remaining, updates)
 
         return updates
+
+    def _rule_remaining_zero(
+        self, card: Card, remaining: int, updates: list
+    ) -> None:
+        """remaining 归零时：两位对手都确定没有这张牌了，高置信度。"""
+        if remaining != 0:
+            return
+        for target in (Player.LEFT, Player.RIGHT):
+            updates.append((target, card, 0, "high"))
+
+    def _rule_other_has_at_most_remaining(
+        self, player: Player, other: Player, card: Card, remaining: int, updates: list
+    ) -> None:
+        """某玩家出牌后，另一方最多持有 remaining 张，低置信度。同时记录到误差分析快照。"""
+        if player not in (Player.LEFT, Player.RIGHT):
+            return
+        if remaining == 0:
+            return
+        updates.append((other, card, remaining, "low"))
+        self._record_total(other, card, remaining)
 
     def on_game_end(self, winner: Player) -> None:
         """计算并打印误差分析。winner 为最后出完牌的玩家。"""
@@ -101,8 +104,8 @@ class Analyzer:
         loser = Player.RIGHT if winner == Player.LEFT else Player.LEFT
         winner_played = self._counter.left if winner == Player.LEFT else self._counter.right
         loser_played = self._counter.right if winner == Player.LEFT else self._counter.left
-        winner_est = self._first_estimate[winner]
-        loser_est = self._first_estimate[loser]
+        winner_est = self._estimated_total[winner]
+        loser_est = self._estimated_total[loser]
 
         lines = [
             f"====== 估算误差分析（{winner.value}获胜）======",
