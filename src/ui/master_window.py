@@ -193,6 +193,24 @@ class MasterWindow(tk.Tk):
                 ):
                     win.set_card_color(card, "red")
 
+        # 分析各张牌的估算
+        player_to_wintype = {Player.LEFT: WindowsType.LEFT, Player.RIGHT: WindowsType.RIGHT}
+        for card, count in cards.items():
+            remaining = self._counter.remaining[card].get()
+            if remaining == 0:
+                # remaining 归零：两位对手都没有了，高置信度
+                for win in self._windows:
+                    if win._window_type in (WindowsType.LEFT, WindowsType.RIGHT):
+                        win.set_estimate(card, 0, "high")
+            elif player in player_to_wintype:
+                # 某玩家出了 count 张，另一位玩家最多持有 remaining 张，低置信度
+                other_wintype = (
+                    WindowsType.RIGHT if player == Player.LEFT else WindowsType.LEFT
+                )
+                for win in self._windows:
+                    if win._window_type == other_wintype:
+                        win.set_estimate(card, remaining, "low")
+
     # ── 拖动 ────────────────────────────────────────────────────────────────
 
     _DRAG_THRESHOLD = 10  # 超过此像素距离才视为拖动，否则视为点击
