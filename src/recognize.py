@@ -50,17 +50,27 @@ def _crop(image: Image, region: Region) -> Image:
     return image[y1:y2, x1:x2]
 
 
+_scale_cache: dict[tuple[int, float], Image] = {}
+
+
 def _scale_template(template: Image, scale: float) -> Image:
     """按比例缩放模板；scale=1.0 时原样返回。
     缩小用 INTER_AREA（抗锯齿效果最好），放大用 INTER_LINEAR。
+    结果按 (模板id, scale) 缓存，避免重复缩放。
     """
     if abs(scale - 1.0) < 0.01:
         return template
+    key = (id(template), round(scale, 4))
+    cached = _scale_cache.get(key)
+    if cached is not None:
+        return cached
     h, w = template.shape[:2]
     new_w = max(1, round(w * scale))
     new_h = max(1, round(h * scale))
     interp = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR
-    return cv2.resize(template, (new_w, new_h), interpolation=interp)
+    result = cv2.resize(template, (new_w, new_h), interpolation=interp)
+    _scale_cache[key] = result
+    return result
 
 
 def _nms_matches(
