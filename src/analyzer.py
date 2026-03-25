@@ -8,11 +8,23 @@ from loguru import logger
 from card_types import Card, Player
 from counter import CardCounts, Counter
 
+# 每条规则方法的 updates 参数类型：每项为 (目标玩家, 牌, 估算剩余张数, 置信度)
+UpdateList = list[tuple[Player, Card, int, str]]
 
 # 顺牌的牌面值顺序（不含2和JOKER，它们不参与顺子）
 _SEQUENCE_ORDER = [
-    Card.THREE, Card.FOUR, Card.FIVE, Card.SIX, Card.SEVEN,
-    Card.EIGHT, Card.NINE, Card.TEN, Card.J, Card.Q, Card.K, Card.A,
+    Card.THREE,
+    Card.FOUR,
+    Card.FIVE,
+    Card.SIX,
+    Card.SEVEN,
+    Card.EIGHT,
+    Card.NINE,
+    Card.TEN,
+    Card.J,
+    Card.Q,
+    Card.K,
+    Card.A,
 ]
 _SEQUENCE_INDEX = {card: i for i, card in enumerate(_SEQUENCE_ORDER)}
 
@@ -31,6 +43,7 @@ def is_sequence(cards: CardCounts) -> bool:
 
 class Estimate:
     """单张牌对单个玩家的估算。"""
+
     __slots__ = ("value", "confidence")
 
     def __init__(self, value: int, confidence: str) -> None:
@@ -61,23 +74,20 @@ class Analyzer:
         if card not in self._estimated_total[player]:
             self._estimated_total[player][card] = value
 
-    def on_card_played(
-        self, player: Player, cards: CardCounts
-    ) -> list[tuple[Player, Card, int, str]]:
+    def on_card_played(self, player: Player, cards: CardCounts) -> UpdateList:
         """处理出牌事件，返回需要更新的估算列表，每项为 (target_player, card, value, confidence)。"""
-        updates: list[tuple[Player, Card, int, str]] = []
-        other = Player.RIGHT if player == Player.LEFT else Player.LEFT
+        updates: UpdateList = []
 
         for card in cards:
             remaining = self._counter.remaining[card].get()
             self._rule_both_have_none(card, remaining, updates)
-            self._rule_other_has_all_remaining(player, other, card, remaining, cards, updates)
+            self._rule_other_has_all_remaining(player, card, remaining, cards, updates)
             self._rule_player_played_all_their_cards(player, card, cards, updates)
 
         return updates
 
     def _rule_both_have_none(
-        self, card: Card, remaining: int, updates: list
+        self, card: Card, remaining: int, updates: UpdateList
     ) -> None:
         """remaining 归零时：两位对手都确定没有这张牌了，高置信度。"""
         if remaining != 0:
@@ -86,7 +96,12 @@ class Analyzer:
             updates.append((target, card, 0, "high"))
 
     def _rule_other_has_all_remaining(
-        self, player: Player, other: Player, card: Card, remaining: int, cards: CardCounts, updates: list
+        self,
+        player: Player,
+        card: Card,
+        remaining: int,
+        cards: CardCounts,
+        updates: UpdateList,
     ) -> None:
         """某玩家出牌后，另一方持有剩余的所有牌。
         remaining==1 且本次出牌数==1（出牌前 remaining 恰好是2）时高置信度，否则低置信度。"""
@@ -94,12 +109,14 @@ class Analyzer:
             return
         if remaining == 0:
             return
+        # other 在此处推导，无需从外部传入
+        other = Player.RIGHT if player == Player.LEFT else Player.LEFT
         confidence = "high" if remaining == 1 and cards[card] == 1 else "low"
         updates.append((other, card, remaining, confidence))
         self._record_total(other, card, remaining)
 
     def _rule_player_played_all_their_cards(
-        self, player: Player, card: Card, cards: CardCounts, updates: list
+        self, player: Player, card: Card, cards: CardCounts, updates: UpdateList
     ) -> None:
         """出牌方打出某张牌且不是顺子时，推断其没有更多这张牌，低置信度。
         误差分析记录出牌数作为估算总数，用于验证"不拆牌"假设的准确率。"""
@@ -117,8 +134,12 @@ class Analyzer:
             return
 
         loser = Player.RIGHT if winner == Player.LEFT else Player.LEFT
-        winner_played = self._counter.left if winner == Player.LEFT else self._counter.right
-        loser_played = self._counter.right if winner == Player.LEFT else self._counter.left
+        winner_played = (
+            self._counter.left if winner == Player.LEFT else self._counter.right
+        )
+        loser_played = (
+            self._counter.right if winner == Player.LEFT else self._counter.left
+        )
         winner_est = self._estimated_total[winner]
         loser_est = self._estimated_total[loser]
 
@@ -131,6 +152,8 @@ class Analyzer:
         for card in Card:
             w_actual = winner_played[card].get()
             l_played = loser_played[card].get()
+            # 败方实际持牌数 = 败方已出数 + 当前剩余数
+            # 注意：remaining 包含底牌（约3张），会导致败方持牌数被轻微高估，属已知近似
             l_actual = l_played + self._counter.remaining[card].get()
 
             w_est = winner_est.get(card)
@@ -152,7 +175,7 @@ class Analyzer:
                 f"{card.value:>6}  {w_actual:>5}  {w_est_str:>5}  {w_err_str:>5}  {l_actual:>5}  {l_est_str:>5}  {l_err_str:>5}"
             )
 
-        total = len(list(Card))
+        total = len(Card)
         for label, errors in [(winner.value, w_errors), (loser.value, l_errors)]:
             n = len(errors)
             coverage = f"{n}/{total}"
@@ -160,7 +183,9 @@ class Analyzer:
                 mae = sum(abs(e) for e in errors) / n
                 over = sum(1 for e in errors if e < 0)
                 under = sum(1 for e in errors if e > 0)
-                lines.append(f"{label}: 覆盖率={coverage}  MAE={mae:.2f}  高估={over}张 低估={under}张")
+                lines.append(
+                    f"{label}: 覆盖率={coverage}  MAE={mae:.2f}  高估={over}张 低估={under}张"
+                )
             else:
                 lines.append(f"{label}: 覆盖率={coverage}  （无估算数据）")
 
