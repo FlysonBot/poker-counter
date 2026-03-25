@@ -6,7 +6,7 @@
 from loguru import logger
 
 from card_types import Card, Player
-from counter import CardCounts, Counter
+from tracking.counter import CardCounts, Counter
 
 # 每条规则方法的 updates 参数类型：每项为 (目标玩家, 牌, 估算剩余张数, 置信度)
 UpdateList = list[tuple[Player, Card, int, str]]

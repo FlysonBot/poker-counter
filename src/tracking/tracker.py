@@ -16,7 +16,7 @@ from recognition.calibrate import calibrate_scale
 from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
 from recognition.recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
-from counter import Counter, CardCounts
+from tracking.counter import Counter, CardCounts
 
 GrayImage = np.ndarray
 OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的回调

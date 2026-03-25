@@ -11,10 +11,10 @@ from ruamel.yaml import YAML
 
 import config as _config
 from config import GUI, HOTKEYS
-from counter import CardCounts, Counter
-from tracker import GameCallbacks, Tracker
+from tracking.counter import CardCounts, Counter
+from tracking.tracker import GameCallbacks, Tracker
 from card_types import Player, WindowsType
-from analyzer import Analyzer
+from tracking.analyzer import Analyzer
 from ui.counter_window import CounterWindow, _calculate_offset
 from ui.overlay_manager import OverlayManager
 

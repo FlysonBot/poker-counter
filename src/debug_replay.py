@@ -24,9 +24,9 @@ from card_types import Card, Player
 from recognition.capture import region_to_pixels
 from config import LOG_RETENTION, REGIONS
 from recognition.recognize import has_warning
-import tracker
-from counter import Counter
-from tracker import GameCallbacks, run
+from tracking import tracker
+from tracking.counter import Counter
+from tracking.tracker import GameCallbacks, run
 
 
 # ---------------------------------------------------------------------------

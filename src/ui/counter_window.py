@@ -13,8 +13,8 @@ from ruamel.yaml import YAML
 
 if TYPE_CHECKING:
     from ui.master_window import MasterWindow
-    from counter import Counter
-    from tracker import Tracker
+    from tracking.counter import Counter
+    from tracking.tracker import Tracker
 
 from loguru import logger
 
