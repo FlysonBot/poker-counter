@@ -17,8 +17,7 @@ import numpy as np
 import cv2
 from loguru import logger
 
-from capture import region_to_pixels
-from capture import GrayImage, Rect
+from recognition.capture import region_to_pixels, GrayImage, Rect
 
 # 低阈值：确保整张牌（含渐变背景）都变白，牌间细边框可以消失
 _BRIGHTNESS_THRESHOLD = 130

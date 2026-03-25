@@ -11,10 +11,10 @@ from typing import Callable, Iterator, Optional
 import numpy as np
 from loguru import logger
 
-from capture import find_game_window, region_to_pixels, take_screenshot
-from calibrate import calibrate_scale
+from recognition.capture import find_game_window, region_to_pixels, take_screenshot
+from recognition.calibrate import calibrate_scale
 from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
-from recognize import has_warning, identify_cards, match_mark
+from recognition.recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
 
 GrayImage = np.ndarray

@@ -10,7 +10,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
 import config as _config
-from capture import find_game_window, region_to_pixels
+from recognition.capture import find_game_window, region_to_pixels
 from config import REGIONS
 from ui.overlay_window import OverlayWindow
 

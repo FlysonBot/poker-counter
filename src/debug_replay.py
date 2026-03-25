@@ -21,9 +21,9 @@ import numpy as np
 from loguru import logger
 
 from card_types import Card, Player
-from capture import region_to_pixels
+from recognition.capture import region_to_pixels
 from config import LOG_RETENTION, REGIONS
-from recognize import has_warning
+from recognition.recognize import has_warning
 import tracker
 from tracker import Counter, run
 
