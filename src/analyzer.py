@@ -70,12 +70,13 @@ class Analyzer:
 
         for card in cards:
             remaining = self._counter.remaining[card].get()
-            self._rule_remaining_zero(card, remaining, updates)
-            self._rule_other_has_at_most_remaining(player, other, card, remaining, updates)
+            self._rule_both_have_none(card, remaining, updates)
+            self._rule_other_has_all_remaining(player, other, card, remaining, cards, updates)
+            self._rule_player_played_all_their_cards(player, card, cards, updates)
 
         return updates
 
-    def _rule_remaining_zero(
+    def _rule_both_have_none(
         self, card: Card, remaining: int, updates: list
     ) -> None:
         """remaining 归零时：两位对手都确定没有这张牌了，高置信度。"""
@@ -84,16 +85,30 @@ class Analyzer:
         for target in (Player.LEFT, Player.RIGHT):
             updates.append((target, card, 0, "high"))
 
-    def _rule_other_has_at_most_remaining(
-        self, player: Player, other: Player, card: Card, remaining: int, updates: list
+    def _rule_other_has_all_remaining(
+        self, player: Player, other: Player, card: Card, remaining: int, cards: CardCounts, updates: list
     ) -> None:
-        """某玩家出牌后，另一方最多持有 remaining 张，低置信度。同时记录到误差分析快照。"""
+        """某玩家出牌后，另一方持有剩余的所有牌。
+        remaining==1 且本次出牌数==1（出牌前 remaining 恰好是2）时高置信度，否则低置信度。"""
         if player not in (Player.LEFT, Player.RIGHT):
             return
         if remaining == 0:
             return
-        updates.append((other, card, remaining, "low"))
+        confidence = "high" if remaining == 1 and cards[card] == 1 else "low"
+        updates.append((other, card, remaining, confidence))
         self._record_total(other, card, remaining)
+
+    def _rule_player_played_all_their_cards(
+        self, player: Player, card: Card, cards: CardCounts, updates: list
+    ) -> None:
+        """出牌方打出某张牌且不是顺子时，推断其没有更多这张牌，低置信度。
+        误差分析记录出牌数作为估算总数，用于验证"不拆牌"假设的准确率。"""
+        if player not in (Player.LEFT, Player.RIGHT):
+            return
+        if is_sequence(cards):
+            return
+        updates.append((player, card, 0, "low"))
+        self._record_total(player, card, cards[card])
 
     def on_game_end(self, winner: Player) -> None:
         """计算并打印误差分析。winner 为最后出完牌的玩家。"""
