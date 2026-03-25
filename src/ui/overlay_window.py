@@ -28,7 +28,13 @@ class OverlayWindow(tk.Toplevel):
     """
 
     def __init__(
-        self, parent: "MasterWindow", region_name: str, x1: int, y1: int, x2: int, y2: int
+        self,
+        parent: "MasterWindow",
+        region_name: str,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
     ) -> None:
         """
         region_name: 区域名称，显示在窗口上作为标识
@@ -96,7 +102,7 @@ class OverlayWindow(tk.Toplevel):
 
         # c 键隐藏叠加层（与主窗口热键一致，焦点在叠加窗口上时也能触发）
         hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
-        toggle_cmd = lambda e: parent._overlay.toggle()
+        toggle_cmd = lambda e: parent.toggle_overlay()  # noqa: E731
         for widget in (self, self._inner, self._label):
             widget.bind(f"<KeyPress-{hotkey}>", toggle_cmd)
 

@@ -4,6 +4,7 @@
 将调整后的坐标转换回比例值并写回 config.yaml。
 """
 
+import sys
 from pathlib import Path
 from loguru import logger
 from ruamel.yaml import YAML
@@ -11,14 +12,12 @@ from ruamel.yaml.comments import CommentedSeq
 
 import config as _config
 from recognition.capture import find_game_window, region_to_pixels
-from config import REGIONS
+from config import REGIONS, raw_config
 from ui.overlay_window import OverlayWindow
 
 
 # config.yaml 的路径（与 config.py 里的逻辑一致）
 def _config_path() -> Path:
-    import sys
-
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent / "config.yaml"
     return Path(__file__).parent.parent / "config.yaml"
@@ -49,8 +48,6 @@ class OverlayManager:
         """如果是首次启动，自动显示叠加层并将标志写为 false。
         只有叠加层成功显示后才写入 false，避免窗口未显示就消耗掉首次启动机会。
         """
-        from config import raw_config
-
         if raw_config.get("IS_FIRST_LAUNCH", False):
             logger.info("首次启动，自动显示区域调整叠加层")
             if self._show():

@@ -14,17 +14,21 @@ from loguru import logger
 
 from config import LOG_LEVEL, LOG_RETENTION
 from ui.master_window import MasterWindow
+from ui.counter_window import open_latest_log
 
 # 部分 tkinter window attribute（如 -transparentcolor）在某些环境下不受支持，
 # monkey-patch attributes() 忽略这些错误，避免因环境差异导致崩溃。
 import tkinter as tk
+
 _orig_attributes = tk.Wm.wm_attributes
+
 
 def _safe_attributes(self, *args, **kwargs):
     try:
         return _orig_attributes(self, *args, **kwargs)
     except Exception:
         pass
+
 
 tk.Wm.wm_attributes = _safe_attributes  # type: ignore
 tk.Wm.attributes = _safe_attributes  # type: ignore
@@ -79,7 +83,7 @@ def _handle_exception(exc_type, exc_value, exc_tb):
 
 def _handle_thread_exception(args):
     """捕获子线程未处理的异常并写入日志。"""
-    if args.exc_type == SystemExit:
+    if args.exc_type is SystemExit:
         return
     formatted = "".join(
         traceback.format_exception(args.exc_type, args.exc_value, args.exc_tb)
@@ -95,13 +99,9 @@ def _backend_error_handler(message: str) -> None:
     # 弹窗告知用户出错，并询问是否查看日志
     messagebox.showerror("错误", message)
     if messagebox.askyesno("日志文件", "是否打开日志文件？"):
-        from ui.counter_window import open_latest_log
-
         open_latest_log()
 
     # 通过全局 tkinter 根窗口触发延迟销毁，确保在主线程执行
-    import tkinter as tk
-
     root: MasterWindow = tk._default_root  # type: ignore
     if root:
         root.delayed_destroy()
