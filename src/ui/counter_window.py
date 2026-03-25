@@ -124,18 +124,83 @@ class CounterWindow(tk.Toplevel):
     # ── 表格 ────────────────────────────────────────────────────────────────
 
     def _create_table(self, config: dict) -> None:
-        frame = ttk.Frame(self)
         font_size = config.get("FONT_SIZE", 18)
-        is_main = self._window_type == WindowsType.MAIN
 
-        # 主窗口横向排列（牌名一行，数量一行）；左右窗口竖向排列（每张牌占一行）
-        if is_main:
+        # 步骤1：创建容器 frame，按窗口类型设置布局方向（水平或垂直）
+        frame = self._setup_frame()
+
+        # 步骤2：初始化颜色变量，供后续出牌时动态修改标签颜色
+        self._init_color_vars()
+
+        # 步骤3：左右窗口专属——初始化估算列变量，并在第0行创建列标题
+        if self._window_type != WindowsType.MAIN:
+            self._init_estimate_vars()
+            self._build_header_row(frame, font_size)
+
+        # 步骤4：为每张牌创建牌名标签和数量标签，绑定颜色变量和计数器变量
+        self._build_card_rows(frame, font_size)
+
+        # 步骤5：设置网格权重，使各格子均匀撑满 frame
+        self._configure_grid(frame)
+
+    def _setup_frame(self) -> ttk.Frame:
+        """创建容器 frame。主窗口横向排列，左右窗口纵向排列并撑满空间。"""
+        frame = ttk.Frame(self)
+        if self._window_type == WindowsType.MAIN:
             frame.pack(padx=0, pady=0)
-            rows, cols = 2, len(Card)
         else:
             frame.pack(padx=0, pady=0, fill="both", expand=True)
-            rows, cols = len(Card) + 1, 3  # +1 for header row, +1 col for estimate
+        return frame
 
+    def _init_color_vars(self) -> None:
+        """为每张牌创建颜色 StringVar。
+        通过 trace 绑定到标签的 fg，出牌时只需更新变量，标签自动变色。
+        """
+        self._color_vars: dict[Card, tk.StringVar] = {
+            card: tk.StringVar(value="black") for card in Card
+        }
+
+    def _init_estimate_vars(self) -> None:
+        """左右窗口专属：初始化估算列的显示值和颜色变量。
+        estimate_vars 存估算张数（初始显示"?"），estimate_color_vars 存置信度颜色。
+        """
+        self._estimate_vars: dict[Card, tk.StringVar] = {
+            card: tk.StringVar(value="?") for card in Card
+        }
+        self._estimate_color_vars: dict[Card, tk.StringVar] = {
+            card: tk.StringVar(value="black") for card in Card
+        }
+        self._estimate_labels: dict[Card, tk.Label] = {}
+
+    def _build_header_row(self, frame: ttk.Frame, font_size: int) -> None:
+        """左右窗口专属：在第0行创建"牌 / 出 / 剩"列标题。"""
+        header_font = ("Arial", font_size - 2)
+        for col_idx, header_text in enumerate(["牌", "出", "剩"]):
+            tk.Label(
+                frame,
+                text=header_text,
+                anchor="center",
+                relief="solid",
+                highlightbackground="red",
+                highlightthickness=1,
+                width=2,
+                font=header_font,
+                bg="lightgray",
+                fg="black",
+            ).grid(row=0, column=col_idx, sticky="nsew")
+
+    def _build_card_rows(self, frame: ttk.Frame, font_size: int) -> None:
+        """为每张牌创建一行标签，并把颜色变量和计数器变量绑定上去。
+
+        绑定机制说明：
+        - 数量标签用 textvariable 绑定 Counter.IntVar，计数变化时自动刷新显示
+        - 颜色标签用 trace 监听 StringVar，出牌事件只需 set() 变量即可触发重绘
+        """
+        is_main = self._window_type == WindowsType.MAIN
+        self._card_labels: dict[Card, tk.Label] = {}
+        self._count_labels: dict[Card, tk.Label] = {}
+
+        # make_label：统一样式的标签工厂，所有格子共用相同的边框和对齐设置
         def make_label(**kw: Any) -> tk.Label:
             return tk.Label(
                 frame,
@@ -147,16 +212,8 @@ class CounterWindow(tk.Toplevel):
                 **kw,
             )
 
-        # 每张牌对应一个 StringVar，用于在后端出牌时动态修改标签颜色
-        self._color_vars: dict[Card, tk.StringVar] = {
-            card: tk.StringVar(value="black") for card in Card
-        }
-
-        self._card_labels: dict[Card, tk.Label] = {}
-        self._count_labels: dict[Card, tk.Label] = {}
-
-        # 根据窗口类型决定数量标签绑定哪个计数器变量
-        # textvariable 让标签内容自动跟随 IntVar 变化，无需手动刷新
+        # get_var：根据窗口类型选择对应的计数器变量
+        # 主窗口显示剩余数，左/右窗口分别显示左家/右家的出牌数
         def get_var(card: Card) -> tk.IntVar:
             if is_main:
                 return self._counter.remaining[card]
@@ -165,33 +222,7 @@ class CounterWindow(tk.Toplevel):
             else:
                 return self._counter.right[card]
 
-        # 左右窗口额外的"剩"列：StringVar 存显示值，颜色 StringVar 存置信度颜色
-        if not is_main:
-            self._estimate_vars: dict[Card, tk.StringVar] = {
-                card: tk.StringVar(value="?") for card in Card
-            }
-            self._estimate_color_vars: dict[Card, tk.StringVar] = {
-                card: tk.StringVar(value="black") for card in Card
-            }
-            self._estimate_labels: dict[Card, tk.Label] = {}
-
-            # 列标题行（占第 0 行）
-            header_font = ("Arial", font_size - 2)
-            for col_idx, header_text in enumerate(["牌", "出", "剩"]):
-                header_lbl = tk.Label(
-                    frame,
-                    text=header_text,
-                    anchor="center",
-                    relief="solid",
-                    highlightbackground="red",
-                    highlightthickness=1,
-                    width=2,
-                    font=header_font,
-                    bg="lightgray",
-                    fg="black",
-                )
-                header_lbl.grid(row=0, column=col_idx, sticky="nsew")
-
+        # 逐张牌创建标签行，放入网格
         for idx, card in enumerate(Card):
             name_text = card.value if card != Card.JOKER else "王"
             card_lbl = make_label(
@@ -205,9 +236,10 @@ class CounterWindow(tk.Toplevel):
             )
 
             if is_main:
+                # 主窗口：横向排列，牌名在第0行，数量在第1行
+                # 颜色变量绑定到牌名标签——变色表示该牌已从剩余中扣除
                 card_lbl.grid(row=0, column=idx, sticky="nsew")
                 count_lbl.grid(row=1, column=idx, sticky="nsew")
-                # 主窗口：颜色变量绑定到牌名标签（变色表示该牌已被打出）
                 self._color_vars[card].trace_add(
                     "write",
                     lambda *_, c=card, lbl=card_lbl: lbl.config(  # type: ignore[arg-type]
@@ -215,19 +247,18 @@ class CounterWindow(tk.Toplevel):
                     ),
                 )
             else:
-                # 有标题行，数据行从第 1 行开始
+                # 左右窗口：纵向排列，第0行是标题，数据行从第1行开始
+                # 颜色变量绑定到数量标签——变红表示同一回合出了多张同种牌
                 row = idx + 1
                 card_lbl.grid(row=row, column=0, sticky="nsew")
                 count_lbl.grid(row=row, column=1, sticky="nsew")
-                # 左右窗口：颜色变量绑定到数量标签（变红表示同一回合出了多张）
                 self._color_vars[card].trace_add(
                     "write",
                     lambda *_, c=card, lbl=count_lbl: lbl.config(  # type: ignore[arg-type]
                         fg=self._color_vars[c].get()
                     ),
                 )
-
-                # "剩"列估算标签
+                # 估算列：显示 Analyzer 推算的对手持牌数，颜色表示置信度
                 est_lbl = make_label(
                     textvariable=self._estimate_vars[card],
                     font=("Arial", font_size, "bold"),
@@ -246,7 +277,11 @@ class CounterWindow(tk.Toplevel):
             self._card_labels[card] = card_lbl
             self._count_labels[card] = count_lbl
 
-        # 设置网格权重使各格子均匀分布
+    def _configure_grid(self, frame: ttk.Frame) -> None:
+        """设置网格行列权重，使所有格子均匀撑满 frame。"""
+        is_main = self._window_type == WindowsType.MAIN
+        rows = 2 if is_main else len(Card) + 1
+        cols = len(Card) if is_main else 3
         for i in range(rows):
             frame.grid_rowconfigure(i, weight=1)
         for j in range(cols):
