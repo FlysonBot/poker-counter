@@ -15,11 +15,13 @@ from recognition.calibrate import calibrate_scale
 from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
 from recognition.recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
-from counter import Counter, CardCounts, verify_counts
+from counter import Counter, CardCounts
 
 GrayImage = np.ndarray
 OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的回调
-OnGameEndFn = Callable[[Player, Player], None]  # 游戏结束时的回调，传入 (winner, landlord)
+OnGameEndFn = Callable[
+    [Player, Player], None
+]  # 游戏结束时的回调，传入 (winner, landlord)
 
 
 # ---------------------------------------------------------------------------
@@ -193,15 +195,22 @@ def run(
                     region = region_to_pixels(PLAY_REGIONS[player], window_rect)
                     cards_this_frame = identify_cards(frame, region, scale)
                     if cards_this_frame and cards_this_frame != prev.get(player, {}):
-                        logger.info(f"游戏结束帧检测到 {player.value} 出牌: {cards_this_frame}")
+                        logger.info(
+                            f"游戏结束帧检测到 {player.value} 出牌: {cards_this_frame}"
+                        )
                         for card, count in cards_this_frame.items():
-                            counter.mark(card, player, count, affect_remaining=(player != Player.MIDDLE))
+                            counter.mark(
+                                card,
+                                player,
+                                count,
+                                deduct_remaining=(player != Player.MIDDLE),
+                            )
                         last_player = player
                         if on_update:
                             on_update(player, cards_this_frame)
                         break
                 assert landlord is not None
-                verify_counts(counter, landlord, last_player)
+                counter.verify(landlord, last_player)
                 if on_game_end:
                     on_game_end(last_player, landlord)
                 break
@@ -228,7 +237,12 @@ def run(
                 if curr[player] and curr[player] != prev[player]:
                     logger.info(f"{player.value} 出牌: {curr[player]}")
                     for card, count in curr[player].items():
-                        counter.mark(card, player, count, affect_remaining=(player != Player.MIDDLE))
+                        counter.mark(
+                            card,
+                            player,
+                            count,
+                            deduct_remaining=(player != Player.MIDDLE),
+                        )
                     last_player = player
                     if on_update:
                         on_update(player, curr[player])
@@ -271,6 +285,7 @@ class Tracker:
         self._stop_event.clear()
         window_rect = find_game_window()
         frames = live_frames(window_rect, self._stop_event)
+
         def _run_safe(*args, **kwargs):
             try:
                 run(*args, **kwargs)
