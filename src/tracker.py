@@ -3,6 +3,7 @@
 通过帧迭代器接收图像，与截图来源解耦（支持实时截图和录屏回放）。
 """
 
+from dataclasses import dataclass
 from threading import Event, Thread
 from time import sleep
 from typing import Callable, Iterator, Optional
@@ -22,6 +23,16 @@ OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的
 OnGameEndFn = Callable[
     [Player, Player], None
 ]  # 游戏结束时的回调，传入 (winner, landlord)
+
+
+@dataclass
+class GameCallbacks:
+    """游戏事件回调容器，所有字段均可选。"""
+
+    on_update: Optional[OnUpdateFn] = None
+    on_reset: Optional[Callable[[], None]] = None
+    on_game_end: Optional[OnGameEndFn] = None
+    mark_potential_bombs: Optional[Callable[[set], None]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -77,10 +88,7 @@ def run(
     frames: Iterator[tuple[GrayImage, tuple[int, int, int, int]]],
     counter: Counter,
     stop_event: Event,
-    on_update: Optional[OnUpdateFn] = None,
-    mark_potential_bombs: Optional[Callable[[set], None]] = None,
-    on_reset: Optional[Callable[[], None]] = None,
-    on_game_end: Optional[OnGameEndFn] = None,
+    callbacks: Optional[GameCallbacks] = None,
 ) -> None:
     """
     游戏主循环。
@@ -88,23 +96,27 @@ def run(
       window_rect 每帧更新，支持用户移动窗口后仍能正确识别
     - counter: 计数状态对象（由调用方持有，以便 UI 绑定）
     - stop_event: 外部停止信号
-    - on_update: 每次出牌后的回调（可选，供 UI 或调试工具使用）
-    - mark_potential_bombs: 识别完手牌后调用，传入我没有的牌的集合（可选）；
-      没有某种牌意味着自己手里没有该牌，UI 用红色高亮提示用户，方便推算对手持牌
+    - callbacks: 游戏事件回调（可选，默认全为 None）
+
+    注：MIDDLE（自己）是特殊玩家——手牌在游戏开始时整批从 remaining 预扣，
+    后续出牌只更新 total_played，不再影响 remaining。
     """
+
+    if callbacks is None:
+        callbacks = GameCallbacks()
 
     while not stop_event.is_set():
         # ── 等待游戏开始 ──────────────────────────────────────────────────
         # 通过检测三个玩家的剩余牌数区域是否出现地主皇冠标记来判断游戏开始
         logger.info("等待游戏开始...")
         counter.reset()
-        if on_reset:
-            on_reset()
+        if callbacks.on_reset:
+            callbacks.on_reset()
         landlord: Optional[Player] = None
         frame: GrayImage = np.zeros((1, 1), dtype=np.uint8)
         window_rect: tuple[int, int, int, int] = (0, 0, 0, 0)
 
-        for frame, window_rect in frames:  # type: GrayImage, tuple[int,int,int,int]
+        for frame, window_rect in frames:
             if stop_event.is_set():
                 return
 
@@ -140,26 +152,18 @@ def run(
         # ── 识别自己的手牌 ────────────────────────────────────────────────
         # 游戏开始后立即识别自己的手牌并从剩余牌数中扣除，
         # 这样剩余数就代表"除了我自己的牌以外还有多少张在场上"
-        frame, window_rect = next(frames)  # type: GrayImage, tuple[int,int,int,int]
+        frame, window_rect = next(frames)
         my_cards = identify_cards(
             frame, region_to_pixels("my_cards", window_rect), scale
         )
         logger.info(f"识别到自己的牌: {my_cards}")
-        for card, count in my_cards.items():
-            counter.mark(card, Player.MIDDLE, count)
-        counter.total_played[Player.MIDDLE] = 0  # 手牌标记不算出牌，重置为 0
-
-        expected = 20 if landlord == Player.MIDDLE else 17
-        if sum(my_cards.values()) != expected:
-            logger.warning(
-                f"自己的牌识别到 {sum(my_cards.values())} 张，期望 {expected} 张"
-            )
+        counter.mark_hand(my_cards, is_landlord=(landlord == Player.MIDDLE))
 
         # 通知 UI 哪些牌不在我手里：
         # 若我没有某种牌，主窗口用红色高亮提示，方便记忆自己的手牌构成并推算对手持牌
-        if mark_potential_bombs:
+        if callbacks.mark_potential_bombs:
             not_my_cards = {card for card in Card if card not in my_cards}
-            mark_potential_bombs(not_my_cards)
+            callbacks.mark_potential_bombs(not_my_cards)
 
         # ── 游戏主循环（帧间对比）────────────────────────────────────────
         # 每帧同时扫描三个出牌区域，与上一帧对比：
@@ -169,9 +173,9 @@ def run(
         prev_crops: dict[Player, GrayImage] = {}
         prev_end_crop: Optional[GrayImage] = None
         prev_end_cards: CardCounts = {}
-        last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用
+        last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用；初始值为占位符，正常情况下游戏结束前必有出牌覆盖此值
 
-        for frame, window_rect in frames:  # type: GrayImage, tuple[int,int,int,int]
+        for frame, window_rect in frames:
             if stop_event.is_set():
                 return
 
@@ -199,20 +203,15 @@ def run(
                             f"游戏结束帧检测到 {player.value} 出牌: {cards_this_frame}"
                         )
                         for card, count in cards_this_frame.items():
-                            counter.mark(
-                                card,
-                                player,
-                                count,
-                                deduct_remaining=(player != Player.MIDDLE),
-                            )
+                            counter.mark(card, player, count, deduct_remaining=True)
                         last_player = player
-                        if on_update:
-                            on_update(player, cards_this_frame)
+                        if callbacks.on_update:
+                            callbacks.on_update(player, cards_this_frame)
                         break
                 assert landlord is not None
                 counter.verify(landlord, last_player)
-                if on_game_end:
-                    on_game_end(last_player, landlord)
+                if callbacks.on_game_end:
+                    callbacks.on_game_end(last_player, landlord)
                 break
 
             # 同时扫描三个出牌区域
@@ -244,8 +243,8 @@ def run(
                             deduct_remaining=(player != Player.MIDDLE),
                         )
                     last_player = player
-                    if on_update:
-                        on_update(player, curr[player])
+                    if callbacks.on_update:
+                        callbacks.on_update(player, curr[player])
 
             prev = curr
 
@@ -259,18 +258,10 @@ class Tracker:
     """封装后端线程的启动/停止，供 UI 调用。"""
 
     def __init__(
-        self,
-        counter: Counter,
-        on_update: Optional[OnUpdateFn] = None,
-        mark_potential_bombs: Optional[Callable[[set], None]] = None,
-        on_reset: Optional[Callable[[], None]] = None,
-        on_game_end: Optional[OnGameEndFn] = None,
+        self, counter: Counter, callbacks: Optional[GameCallbacks] = None
     ) -> None:
         self.counter = counter
-        self.on_update = on_update
-        self.mark_potential_bombs = mark_potential_bombs
-        self.on_reset = on_reset
-        self.on_game_end = on_game_end
+        self.callbacks = callbacks if callbacks is not None else GameCallbacks()
         self._stop_event = Event()
         self._thread: Optional[Thread] = None
 
@@ -286,25 +277,13 @@ class Tracker:
         window_rect = find_game_window()
         frames = live_frames(window_rect, self._stop_event)
 
-        def _run_safe(*args, **kwargs):
+        def _run_safe():
             try:
-                run(*args, **kwargs)
+                run(frames, self.counter, self._stop_event, self.callbacks)
             except Exception as e:
                 logger.exception(f"后端线程异常退出: {e}")
 
-        self._thread = Thread(
-            target=_run_safe,
-            args=(
-                frames,
-                self.counter,
-                self._stop_event,
-                self.on_update,
-                self.mark_potential_bombs,
-                self.on_reset,
-                self.on_game_end,
-            ),
-            daemon=True,  # 主线程退出时后端线程自动结束，不会阻止程序退出
-        )
+        self._thread = Thread(target=_run_safe, daemon=True)
         self._thread.start()
         logger.success("Tracker 已启动")
 

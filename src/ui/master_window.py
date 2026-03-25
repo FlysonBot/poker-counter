@@ -12,8 +12,8 @@ from ruamel.yaml import YAML
 import config as _config
 from config import GUI, HOTKEYS
 from counter import Counter
-from tracker import Tracker
-from card_types import Card, Player, WindowsType
+from tracker import GameCallbacks, Tracker
+from card_types import Player, WindowsType
 from analyzer import Analyzer
 from ui.counter_window import CounterWindow, _calculate_offset
 from ui.overlay_manager import OverlayManager
@@ -28,10 +28,12 @@ class MasterWindow(tk.Tk):
         self._analyzer = Analyzer(self._counter)
         self._tracker = Tracker(
             self._counter,
-            on_update=self._on_card_played,
-            mark_potential_bombs=self._mark_potential_bombs,
-            on_reset=self._on_reset,
-            on_game_end=self._on_game_end,
+            GameCallbacks(
+                on_update=self._on_card_played,
+                mark_potential_bombs=self._mark_potential_bombs,
+                on_reset=self._on_reset,
+                on_game_end=self._on_game_end,
+            ),
         )
         self._windows: list[CounterWindow] = []
 
@@ -161,6 +163,9 @@ class MasterWindow(tk.Tk):
         else:
             self._enable_switch()
 
+    def toggle_overlay(self) -> None:
+        self._overlay.toggle()
+
     # ── 出牌回调（更新窗口颜色）────────────────────────────────────────────
 
     def _on_reset(self) -> None:
@@ -182,7 +187,6 @@ class MasterWindow(tk.Tk):
 
     def _on_card_played(self, player, cards) -> None:
         """tracker 检测到出牌时，更新窗口颜色和估算。"""
-        player_to_wintype = {Player.LEFT: WindowsType.LEFT, Player.RIGHT: WindowsType.RIGHT}
         for win in self._windows:
             for card, count in cards.items():
                 # 左/右窗口：同一回合出了多张同种牌时变红
@@ -224,7 +228,9 @@ class MasterWindow(tk.Tk):
     def _on_drag_move(self, event: tk.Event) -> None:
         dx = event.x - self._drag_start_x
         dy = event.y - self._drag_start_y
-        if not self._dragging and (abs(dx) > self._DRAG_THRESHOLD or abs(dy) > self._DRAG_THRESHOLD):
+        if not self._dragging and (
+            abs(dx) > self._DRAG_THRESHOLD or abs(dy) > self._DRAG_THRESHOLD
+        ):
             self._dragging = True
         if self._dragging:
             x = self.winfo_x() + dx

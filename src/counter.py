@@ -38,6 +38,24 @@ class Counter:
             self.right[card].set(0)
         self.total_played = {p: 0 for p in Player}
 
+    def _deduct(self, card: Card, count: int) -> int:
+        """从 remaining 扣除指定张数，返回扣除后的值。"""
+        new_val = self.remaining[card].get() - count
+        if new_val < 0:
+            logger.warning(f"剩余 {card.value} 数量变为负数，可能有误识别")
+        self.remaining[card].set(new_val)
+        return new_val
+
+    def mark_hand(self, cards: CardCounts, is_landlord: bool) -> None:
+        """游戏开始时记录自己的手牌，从 remaining 整批扣除，不计入出牌数。"""
+        for card, count in cards.items():
+            self._deduct(card, count)
+        expected = 20 if is_landlord else 17
+        if sum(cards.values()) != expected:
+            logger.warning(
+                f"自己的牌识别到 {sum(cards.values())} 张，期望 {expected} 张"
+            )
+
     def mark(
         self, card: Card, player: Player, count: int = 1, deduct_remaining: bool = True
     ) -> None:
@@ -47,10 +65,7 @@ class Counter:
         因为自己的手牌在游戏开始时已整批从 remaining 扣除，出牌时不再重复扣。
         """
         if deduct_remaining:
-            new_val = self.remaining[card].get() - count
-            if new_val < 0:
-                logger.warning(f"剩余 {card.value} 数量变为负数，可能有误识别")
-            self.remaining[card].set(new_val)
+            new_val = self._deduct(card, count)
         else:
             new_val = self.remaining[card].get()
 
@@ -66,7 +81,7 @@ class Counter:
     def total_remaining(self) -> int:
         return sum(v.get() for v in self.remaining.values())
 
-    def verify(self, landlord: Player, last_player: Player) -> None:
+    def verify(self, landlord: Player, winner: Player) -> None:
         """游戏结束时检查计数是否在合法范围内，异常情况记录 warning。"""
         logger.info("开始游戏结束自检")
         remaining = self.total_remaining
@@ -88,7 +103,6 @@ class Counter:
 
         # 检查各玩家出牌总数是否符合斗地主规则
         # 获胜方必须打完所有手牌（地主 20 张，农民 17 张）
-        winner = last_player
         for player in Player:
             played = self.total_played[player]
             is_landlord = player == landlord
