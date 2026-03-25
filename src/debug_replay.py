@@ -26,7 +26,7 @@ from config import LOG_RETENTION, REGIONS
 from recognition.recognize import has_warning
 import tracker
 from counter import Counter
-from tracker import run
+from tracker import GameCallbacks, run
 
 
 # ---------------------------------------------------------------------------
@@ -56,11 +56,11 @@ def video_frames(
     window_rect = (0, 0, w, h)  # 视频帧坐标从 (0,0) 起，宽高即录制分辨率
     stop_at = end_frame if end_frame > 0 else total
     if sample_interval > 0:
-        logger.info(f"采样间隔: {sample_interval}s（每 {max(1, round(sample_interval * fps))} 帧取一帧）")
+        logger.info(
+            f"采样间隔: {sample_interval}s（每 {max(1, round(sample_interval * fps))} 帧取一帧）"
+        )
 
-    logger.info(
-        f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}"
-    )
+    logger.info(f"视频信息: {total} 帧, {fps:.1f} fps, 分辨率 {w}x{h}")
 
     # 跳帧：直接 seek 到指定位置，跳过前面不感兴趣的部分
     if start_frame > 0:
@@ -112,7 +112,9 @@ def parse_timestamp(ts: str, fps: float) -> int:
     return round(seconds * fps)
 
 
-def dump_regions(video_path: str, output_path: str, frame_index: int = 0, timestamp: str = "") -> None:
+def dump_regions(
+    video_path: str, output_path: str, frame_index: int = 0, timestamp: str = ""
+) -> None:
     """读取视频指定帧，在上面画出所有 REGIONS 的矩形框，保存为图片。"""
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -138,9 +140,14 @@ def dump_regions(video_path: str, output_path: str, frame_index: int = 0, timest
 
     # 每个区域用不同颜色，循环使用
     colors = [
-        (0, 255, 0), (0, 0, 255), (255, 0, 0),
-        (0, 255, 255), (255, 0, 255), (255, 165, 0),
-        (128, 0, 128), (0, 128, 128),
+        (0, 255, 0),
+        (0, 0, 255),
+        (255, 0, 0),
+        (0, 255, 255),
+        (255, 0, 255),
+        (255, 165, 0),
+        (128, 0, 128),
+        (0, 128, 128),
     ]
 
     for i, region_name in enumerate(REGIONS):
@@ -148,8 +155,14 @@ def dump_regions(video_path: str, output_path: str, frame_index: int = 0, timest
         color = colors[i % len(colors)]
         cv2.rectangle(frame_bgr, (x1, y1), (x2, y2), color, 2)
         cv2.putText(
-            frame_bgr, region_name, (x1, max(y1 - 6, 12)),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA,
+            frame_bgr,
+            region_name,
+            (x1, max(y1 - 6, 12)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            color,
+            1,
+            cv2.LINE_AA,
         )
 
     cv2.imwrite(output_path, frame_bgr)
@@ -164,7 +177,10 @@ def make_on_update(counter):
             for c in counter.remaining
             if counter.remaining[c].get() < 4
         )
-        logger.info(f"{player.value} 出牌: {cards_str} | 剩余: {remaining_str} （共{counter.total_remaining}张）")
+        logger.info(
+            f"{player.value} 出牌: {cards_str} | 剩余: {remaining_str} （共{counter.total_remaining}张）"
+        )
+
     return on_update
 
 
@@ -172,12 +188,35 @@ def main():
     parser = argparse.ArgumentParser(description="记牌器录屏回放调试工具")
     parser.add_argument("video", help="录屏文件路径")
     parser.add_argument("--start-frame", type=int, default=0, help="从第几帧开始")
-    parser.add_argument("--start-time", metavar="TIME", help="开始时间戳（秒数、MM:SS 或 HH:MM:SS），优先于 --start-frame")
-    parser.add_argument("--end-frame", type=int, default=0, help="到第几帧结束（默认播放到结尾）")
-    parser.add_argument("--end-time", metavar="TIME", help="结束时间戳（秒数、MM:SS 或 HH:MM:SS），优先于 --end-frame")
-    parser.add_argument("--sample-interval", type=float, default=0.0, metavar="SECONDS", help="每隔多少秒取一帧（默认逐帧）")
-    parser.add_argument("--quiet", action="store_true", help="压制像素未变的 DEBUG 日志")
-    parser.add_argument("--log-level", default="INFO", metavar="LEVEL", help="日志级别：TRACE/DEBUG/INFO/WARNING/ERROR（默认 INFO）")
+    parser.add_argument(
+        "--start-time",
+        metavar="TIME",
+        help="开始时间戳（秒数、MM:SS 或 HH:MM:SS），优先于 --start-frame",
+    )
+    parser.add_argument(
+        "--end-frame", type=int, default=0, help="到第几帧结束（默认播放到结尾）"
+    )
+    parser.add_argument(
+        "--end-time",
+        metavar="TIME",
+        help="结束时间戳（秒数、MM:SS 或 HH:MM:SS），优先于 --end-frame",
+    )
+    parser.add_argument(
+        "--sample-interval",
+        type=float,
+        default=0.0,
+        metavar="SECONDS",
+        help="每隔多少秒取一帧（默认逐帧）",
+    )
+    parser.add_argument(
+        "--quiet", action="store_true", help="压制像素未变的 DEBUG 日志"
+    )
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        metavar="LEVEL",
+        help="日志级别：TRACE/DEBUG/INFO/WARNING/ERROR（默认 INFO）",
+    )
     parser.add_argument(
         "--dump-regions",
         metavar="OUTPUT",
@@ -217,7 +256,9 @@ def main():
     )
 
     if args.dump_regions:
-        dump_regions(args.video, args.dump_regions, args.dump_frame, args.dump_time or "")
+        dump_regions(
+            args.video, args.dump_regions, args.dump_frame, args.dump_time or ""
+        )
         return
 
     # 录屏回放不需要 sleep，patch 掉避免浪费时间
@@ -229,17 +270,26 @@ def main():
     probe_fps = cap_probe.get(cv2.CAP_PROP_FPS) or 30
     cap_probe.release()
 
-    start_frame = parse_timestamp(args.start_time, probe_fps) if args.start_time else args.start_frame
-    end_frame = parse_timestamp(args.end_time, probe_fps) if args.end_time else args.end_frame
+    start_frame = (
+        parse_timestamp(args.start_time, probe_fps)
+        if args.start_time
+        else args.start_frame
+    )
+    end_frame = (
+        parse_timestamp(args.end_time, probe_fps) if args.end_time else args.end_frame
+    )
 
     if args.ui:
         import tkinter as tk
+
         _orig_attributes = tk.Wm.wm_attributes
+
         def _safe_attributes(self, *args, **kwargs):
             try:
                 return _orig_attributes(self, *args, **kwargs)
             except Exception:
                 pass
+
         tk.Wm.wm_attributes = _safe_attributes  # type: ignore
         tk.Wm.attributes = _safe_attributes  # type: ignore
 
@@ -250,30 +300,47 @@ def main():
         stop_event = Event()
 
         def print_result():
-            left_win = next((w for w in master._windows if w._window_type.name == "LEFT"), None)
-            right_win = next((w for w in master._windows if w._window_type.name == "RIGHT"), None)
-            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>2}  {'下家':>3}  {'剩余':>2}  {'上家估':>2}  {'下家估':>2}", "-" * 42]
+            left_win = next(
+                (w for w in master._windows if w._window_type.name == "LEFT"), None
+            )
+            right_win = next(
+                (w for w in master._windows if w._window_type.name == "RIGHT"), None
+            )
+            lines = [
+                "====== 本局计牌结果 ======",
+                f"{'牌':>5}  {'上家':>2}  {'下家':>3}  {'剩余':>2}  {'上家估':>2}  {'下家估':>2}",
+                "-" * 42,
+            ]
             for card in Card:
                 r = counter.remaining[card].get()
-                l = counter.left[card].get()
+                left = counter.left[card].get()
                 ri = counter.right[card].get()
                 le = left_win._estimate_vars[card].get() if left_win else "?"
                 re = right_win._estimate_vars[card].get() if right_win else "?"
-                lines.append(f"{card.value:>6}  {l:>4}  {ri:>5}  {r:>4}  {le:>5}  {re:>6}")
+                lines.append(
+                    f"{card.value:>6}  {left:>4}  {ri:>5}  {r:>4}  {le:>5}  {re:>6}"
+                )
             lines.append(f"总剩余: {counter.total_remaining}")
             for player in Player:
                 lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
             logger.info("\n" + "\n".join(lines))
 
         _original_reset = counter.reset
+
         def _reset_with_print():
             if any(v > 0 for v in counter.total_played.values()):
                 print_result()
             _original_reset()
             master._on_reset()
+
         counter.reset = _reset_with_print
 
-        frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
+        frames = video_frames(
+            args.video,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            sample_interval=args.sample_interval,
+        )
 
         # patch 掉所有可能干扰 replay 的操作（保留退出），必须在 _switch_on 之前
         # 这样 _switch_on 内部调度的 after(100, _enable_switch) 也会被 patch 掉
@@ -291,7 +358,9 @@ def main():
             # 禁用调整按钮（btn_row Frame 里的第一个 Button）
             for widget in master.winfo_children():
                 if isinstance(widget, tk.Frame):
-                    buttons = [c for c in widget.winfo_children() if isinstance(c, tk.Button)]
+                    buttons = [
+                        c for c in widget.winfo_children() if isinstance(c, tk.Button)
+                    ]
                     if buttons:
                         buttons[0].config(state="disabled")
                     break
@@ -306,6 +375,7 @@ def main():
             logger.info(f"开始回放: {args.video}")
             try:
                 _log_update = make_on_update(counter)
+
                 def _on_update(player, cards):
                     _log_update(player, cards)
                     master._on_card_played(player, cards)
@@ -314,10 +384,12 @@ def main():
                     frames,
                     counter,
                     stop_event,
-                    on_update=_on_update,
-                    mark_potential_bombs=master._mark_potential_bombs,
-                    on_reset=master._on_reset,
-                    on_game_end=master._on_game_end,
+                    GameCallbacks(
+                        on_update=_on_update,
+                        mark_potential_bombs=master._mark_potential_bombs,
+                        on_reset=master._on_reset,
+                        on_game_end=master._on_game_end,
+                    ),
                 )
             except StopIteration:
                 pass
@@ -330,6 +402,7 @@ def main():
 
     else:
         import tkinter as tk
+
         _root = tk.Tk()
         _root.withdraw()  # 隐藏窗口，仅用于满足 tk.IntVar 的依赖
 
@@ -337,29 +410,45 @@ def main():
         stop_event = Event()
 
         def print_result():
-            lines = ["====== 本局计牌结果 ======", f"{'牌':>5}  {'上家':>3}  {'下家':>4}  {'剩余':>3}", "-" * 30]
+            lines = [
+                "====== 本局计牌结果 ======",
+                f"{'牌':>5}  {'上家':>3}  {'下家':>4}  {'剩余':>3}",
+                "-" * 30,
+            ]
             for card in Card:
                 r = counter.remaining[card].get()
-                l = counter.left[card].get()
+                left = counter.left[card].get()
                 ri = counter.right[card].get()
-                lines.append(f"{card.value:>6}  {l:>4}  {ri:>5}  {r:>4}")
+                lines.append(f"{card.value:>6}  {left:>4}  {ri:>5}  {r:>4}")
             lines.append(f"总剩余: {counter.total_remaining}")
             for player in Player:
                 lines.append(f"{player.value} 总出牌: {counter.total_played[player]}")
             logger.info("\n" + "\n".join(lines))
 
         _original_reset = counter.reset
+
         def _reset_with_print():
             if any(v > 0 for v in counter.total_played.values()):
                 print_result()
             _original_reset()
+
         counter.reset = _reset_with_print
 
-        frames = video_frames(args.video, start_frame=start_frame, end_frame=end_frame, sample_interval=args.sample_interval)
+        frames = video_frames(
+            args.video,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            sample_interval=args.sample_interval,
+        )
 
         logger.info(f"开始回放: {args.video}")
         try:
-            run(frames, counter, stop_event, on_update=make_on_update(counter))
+            run(
+                frames,
+                counter,
+                stop_event,
+                GameCallbacks(on_update=make_on_update(counter)),
+            )
         except StopIteration:
             pass
         except KeyboardInterrupt:

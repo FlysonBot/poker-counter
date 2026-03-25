@@ -13,6 +13,8 @@ from ruamel.yaml import YAML
 
 if TYPE_CHECKING:
     from ui.master_window import MasterWindow
+    from counter import Counter
+    from tracker import Tracker
 
 from loguru import logger
 
@@ -53,9 +55,6 @@ def open_latest_log() -> None:
 
 
 def open_config() -> None:
-    import sys
-    from pathlib import Path
-
     if getattr(sys, "frozen", False):
         path = Path(sys.executable).parent / "config.yaml"
     else:
@@ -72,12 +71,12 @@ class CounterWindow(tk.Toplevel):
     """记牌器悬浮窗，显示剩余牌数（主窗口）或玩家出牌数（左/右窗口）。"""
 
     def __init__(
-        self, window_type: WindowsType, parent: "MasterWindow", counter, tracker
+        self,
+        window_type: WindowsType,
+        parent: "MasterWindow",
+        counter: "Counter",
+        tracker: "Tracker",
     ) -> None:
-        """
-        counter: tracker.Counter 实例
-        tracker: tracker.Tracker 实例（用于热键 reset）
-        """
         super().__init__(parent)
         self._window_type = window_type
         self._parent = parent
@@ -87,6 +86,8 @@ class CounterWindow(tk.Toplevel):
         config = GUI.get(window_type.name, {})
 
         # 表格必须在获取窗口尺寸之前创建，否则 winfo_width/height 返回 1
+        self._drag_x = 0
+        self._drag_y = 0
         self._create_table(config)
         self._setup_style(config)
         self._setup_position(config)
@@ -156,12 +157,13 @@ class CounterWindow(tk.Toplevel):
 
         # 根据窗口类型决定数量标签绑定哪个计数器变量
         # textvariable 让标签内容自动跟随 IntVar 变化，无需手动刷新
-        if is_main:
-            get_var = lambda card: self._counter.remaining[card]
-        elif self._window_type == WindowsType.LEFT:
-            get_var = lambda card: self._counter.left[card]
-        else:
-            get_var = lambda card: self._counter.right[card]
+        def get_var(card: Card) -> tk.IntVar:
+            if is_main:
+                return self._counter.remaining[card]
+            elif self._window_type == WindowsType.LEFT:
+                return self._counter.left[card]
+            else:
+                return self._counter.right[card]
 
         # 左右窗口额外的"剩"列：StringVar 存显示值，颜色 StringVar 存置信度颜色
         if not is_main:
@@ -283,7 +285,7 @@ class CounterWindow(tk.Toplevel):
             "OPEN_LOG": lambda e: open_latest_log(),
             "OPEN_CONFIG": lambda e: open_config(),
             "RESET": lambda e: self._reset(),
-            "TOGGLE_OVERLAY": lambda e: self._parent._overlay.toggle(),
+            "TOGGLE_OVERLAY": lambda e: self._parent.toggle_overlay(),
         }
         for key, callback in hotkey_map.items():
             if key in HOTKEYS:
@@ -347,22 +349,18 @@ class CounterWindow(tk.Toplevel):
 def _calculate_offset(w: int, h: int, config: dict) -> tuple[int, int]:
     # config 里 OFFSET 和 CENTER 二选一：
     # OFFSET 直接指定窗口左上角坐标；CENTER 指定窗口中心坐标（需要减去半个窗口尺寸换算）
-    x = (
-        config.get("OFFSET_X")
-        if config.get("OFFSET_X") is not None
-        else (
-            config.get("CENTER_X", 0) - w // 2
-            if config.get("CENTER_X") is not None
-            else 0
-        )
-    )
-    y = (
-        config.get("OFFSET_Y")
-        if config.get("OFFSET_Y") is not None
-        else (
-            config.get("CENTER_Y", 0) - h // 2
-            if config.get("CENTER_Y") is not None
-            else 0
-        )
-    )
+    if config.get("OFFSET_X") is not None:
+        x = config["OFFSET_X"]
+    elif config.get("CENTER_X") is not None:
+        x = config["CENTER_X"] - w // 2
+    else:
+        x = 0
+
+    if config.get("OFFSET_Y") is not None:
+        y = config["OFFSET_Y"]
+    elif config.get("CENTER_Y") is not None:
+        y = config["CENTER_Y"] - h // 2
+    else:
+        y = 0
+
     return int(x), int(y)
