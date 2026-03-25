@@ -25,7 +25,8 @@ from recognition.capture import region_to_pixels
 from config import LOG_RETENTION, REGIONS
 from recognition.recognize import has_warning
 import tracker
-from tracker import Counter, run
+from counter import Counter
+from tracker import run
 
 
 # ---------------------------------------------------------------------------
