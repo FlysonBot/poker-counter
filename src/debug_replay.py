@@ -301,10 +301,10 @@ def main():
 
         def print_result():
             left_win = next(
-                (w for w in master._windows if w._window_type.name == "LEFT"), None
+                (w for w in master._windows if w.window_type.name == "LEFT"), None
             )
             right_win = next(
-                (w for w in master._windows if w._window_type.name == "RIGHT"), None
+                (w for w in master._windows if w.window_type.name == "RIGHT"), None
             )
             lines = [
                 "====== 本局计牌结果 ======",

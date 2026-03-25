@@ -78,7 +78,7 @@ class CounterWindow(tk.Toplevel):
         tracker: "Tracker",
     ) -> None:
         super().__init__(parent)
-        self._window_type = window_type
+        self.window_type = window_type
         self._parent = parent
         self._counter = counter
         self._tracker = tracker
@@ -98,7 +98,7 @@ class CounterWindow(tk.Toplevel):
     # ── 样式与位置 ──────────────────────────────────────────────────────────
 
     def _setup_style(self, config: dict) -> None:
-        self.title(f"记牌器-{self._window_type.value}")
+        self.title(f"记牌器-{self.window_type.value}")
         self.attributes("-topmost", True)  # 始终置于最顶层
         self.overrideredirect(True)  # 去掉系统标题栏和边框
         self.configure(bg="white")
@@ -119,7 +119,7 @@ class CounterWindow(tk.Toplevel):
         h = self.winfo_height()
         x, y = _calculate_offset(w, h, config)
         self.geometry(f"+{x}+{y}")
-        logger.info(f"{self._window_type.value}窗口位置: +{x}+{y}，尺寸: {w}x{h}")
+        logger.info(f"{self.window_type.value}窗口位置: +{x}+{y}，尺寸: {w}x{h}")
 
     # ── 表格 ────────────────────────────────────────────────────────────────
 
@@ -133,7 +133,7 @@ class CounterWindow(tk.Toplevel):
         self._init_color_vars()
 
         # 步骤3：左右窗口专属——初始化估算列变量，并在第0行创建列标题
-        if self._window_type != WindowsType.MAIN:
+        if self.window_type != WindowsType.MAIN:
             self._init_estimate_vars()
             self._build_header_row(frame, font_size)
 
@@ -146,7 +146,7 @@ class CounterWindow(tk.Toplevel):
     def _setup_frame(self) -> ttk.Frame:
         """创建容器 frame。主窗口横向排列，左右窗口纵向排列并撑满空间。"""
         frame = ttk.Frame(self)
-        if self._window_type == WindowsType.MAIN:
+        if self.window_type == WindowsType.MAIN:
             frame.pack(padx=0, pady=0)
         else:
             frame.pack(padx=0, pady=0, fill="both", expand=True)
@@ -196,7 +196,7 @@ class CounterWindow(tk.Toplevel):
         - 数量标签用 textvariable 绑定 Counter.IntVar，计数变化时自动刷新显示
         - 颜色标签用 trace 监听 StringVar，出牌事件只需 set() 变量即可触发重绘
         """
-        is_main = self._window_type == WindowsType.MAIN
+        is_main = self.window_type == WindowsType.MAIN
         self._card_labels: dict[Card, tk.Label] = {}
         self._count_labels: dict[Card, tk.Label] = {}
 
@@ -217,7 +217,7 @@ class CounterWindow(tk.Toplevel):
         def get_var(card: Card) -> tk.IntVar:
             if is_main:
                 return self._counter.remaining[card]
-            elif self._window_type == WindowsType.LEFT:
+            elif self.window_type == WindowsType.LEFT:
                 return self._counter.left[card]
             else:
                 return self._counter.right[card]
@@ -279,7 +279,7 @@ class CounterWindow(tk.Toplevel):
 
     def _configure_grid(self, frame: ttk.Frame) -> None:
         """设置网格行列权重，使所有格子均匀撑满 frame。"""
-        is_main = self._window_type == WindowsType.MAIN
+        is_main = self.window_type == WindowsType.MAIN
         rows = 2 if is_main else len(Card) + 1
         cols = len(Card) if is_main else 3
         for i in range(rows):
@@ -295,7 +295,7 @@ class CounterWindow(tk.Toplevel):
     def reset_colors(self) -> None:
         for var in self._color_vars.values():
             var.set("black")
-        if self._window_type != WindowsType.MAIN:
+        if self.window_type != WindowsType.MAIN:
             for card in Card:
                 self._estimate_vars[card].set("?")
                 self._estimate_color_vars[card].set("black")
@@ -344,7 +344,7 @@ class CounterWindow(tk.Toplevel):
         """拖动结束时把新位置写回 config.yaml，下次启动时自动恢复。"""
         x = self.winfo_x()
         y = self.winfo_y()
-        key = self._window_type.name  # "MAIN" / "LEFT" / "RIGHT"
+        key = self.window_type.name  # "MAIN" / "LEFT" / "RIGHT"
         try:
             if getattr(sys, "frozen", False):
                 path = Path(sys.executable).parent / "config.yaml"

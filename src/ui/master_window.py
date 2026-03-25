@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 import config as _config
 from config import GUI, HOTKEYS
-from counter import Counter
+from counter import CardCounts, Counter
 from tracker import GameCallbacks, Tracker
 from card_types import Player, WindowsType
 from analyzer import Analyzer
@@ -48,6 +48,12 @@ class MasterWindow(tk.Tk):
             "-transparentcolor", "white"
         )  # 白色背景变透明，实现异形窗口效果
 
+        # 叠加层管理器：热键 c 切换显示/隐藏，首次启动自动显示
+        # 必须在按钮创建前初始化，因为"调整"按钮的 command 通过 toggle_overlay() 引用它
+        self._overlay = OverlayManager(self)
+        hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
+        self.bind(f"<KeyPress-{hotkey}>", lambda e: self._overlay.toggle())
+
         # 开关按钮：打开/关闭记牌器，text 和 command 会在开关时动态切换
         self._btn_switch = tk.Button(
             self,
@@ -72,7 +78,7 @@ class MasterWindow(tk.Tk):
         tk.Button(
             btn_row,
             text="调整",
-            command=lambda: self._overlay.toggle(),
+            command=self.toggle_overlay,
             font=("TkDefaultFont", font_size),
         ).pack(side="left", fill="x", expand=True)
         tk.Button(
@@ -88,10 +94,6 @@ class MasterWindow(tk.Tk):
         x, y = _calculate_offset(self.winfo_width(), self.winfo_height(), config)
         self.geometry(f"+{x}+{y}")
 
-        # 叠加层管理器：热键 c 切换显示/隐藏，首次启动自动显示
-        self._overlay = OverlayManager(self)
-        hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
-        self.bind(f"<KeyPress-{hotkey}>", lambda e: self._overlay.toggle())
         self._overlay.show_if_first_launch()
 
         # 拖动支持
@@ -111,7 +113,7 @@ class MasterWindow(tk.Tk):
         self._btn_switch.config(state="disabled")
 
         # 开始计数时自动隐藏叠加层（假定用户已完成区域调整）
-        self._overlay._hide()
+        self._overlay.hide()
 
         # 创建各记牌器悬浮窗（根据 config.yaml 中的 DISPLAY 配置决定是否显示）
         self._windows.clear()
@@ -181,36 +183,33 @@ class MasterWindow(tk.Tk):
         """
         # 把我没有的牌在主窗口标红
         for win in self._windows:
-            if win._window_type == WindowsType.MAIN:
+            if win.window_type == WindowsType.MAIN:
                 for card in not_my_cards:
                     win.set_card_color(card, "red")
 
-    def _on_card_played(self, player, cards) -> None:
+    def _on_card_played(self, player: Player, cards: "CardCounts") -> None:
         """tracker 检测到出牌时，更新窗口颜色和估算。"""
-        for win in self._windows:
-            for card, count in cards.items():
-                # 左/右窗口：同一回合出了多张同种牌时变红
-                if (
-                    win._window_type == WindowsType.LEFT
-                    and player == Player.LEFT
-                    and count > 1
-                ):
-                    win.set_card_color(card, "red")
-                elif (
-                    win._window_type == WindowsType.RIGHT
-                    and player == Player.RIGHT
-                    and count > 1
-                ):
-                    win.set_card_color(card, "red")
+        # 将出牌玩家映射到对应的悬浮窗，用于颜色更新和估算显示
+        player_wintype = {
+            Player.LEFT: WindowsType.LEFT,
+            Player.RIGHT: WindowsType.RIGHT,
+        }
+        target_wins = {win.window_type: win for win in self._windows}
 
-        # 委托 analyzer 推算估算，再更新 UI
+        # 左/右窗口：同一回合出了多张同种牌时标红，提示该玩家可能手里没有更多这张牌
+        if player in player_wintype:
+            win = target_wins.get(player_wintype[player])
+            if win:
+                for card, count in cards.items():
+                    if count > 1:
+                        win.set_card_color(card, "red")
+
+        # 委托 analyzer 推算对手持牌，再把结果写入对应悬浮窗的估算列
         updates = self._analyzer.on_card_played(player, cards)
-        wintype_map = {Player.LEFT: WindowsType.LEFT, Player.RIGHT: WindowsType.RIGHT}
         for target, card, value, confidence in updates:
-            target_wintype = wintype_map.get(target)
-            for win in self._windows:
-                if win._window_type == target_wintype:
-                    win.set_estimate(card, value, confidence)
+            win = target_wins.get(player_wintype.get(target))
+            if win:
+                win.set_estimate(card, value, confidence)
 
     def _on_game_end(self, winner: Player, landlord: Player) -> None:
         """游戏结束时输出误差分析。"""
@@ -315,7 +314,4 @@ class MasterWindow(tk.Tk):
         """延迟 1 秒后销毁窗口。供后端错误处理器调用——
         直接在后端线程里调用 destroy() 会导致跨线程操作 tkinter 而卡死，
         改用 after() 把销毁操作调度回主线程执行。"""
-        self.after(1000, self._do_destroy)  # type: ignore
-
-    def _do_destroy(self) -> None:
-        self.destroy()
+        self.after(1000, self.destroy)  # type: ignore

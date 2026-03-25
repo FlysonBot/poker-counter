@@ -81,6 +81,9 @@ class OverlayManager:
         logger.info("区域调整叠加层已显示")
         return True
 
+    def hide(self) -> None:
+        self._hide()
+
     def _hide(self) -> None:
         """销毁所有叠加窗口。"""
         for win in self._windows.values():
