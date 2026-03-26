@@ -1,5 +1,8 @@
 """
-计数状态模块。维护一局游戏中各牌的剩余数量和各玩家出牌数，并在游戏结束时进行合法性校验。
+计数状态模块。
+
+维护一局游戏中各牌的全局剩余数量和各玩家出牌数，游戏结束时进行合法性校验。
+所有计数使用 tk.IntVar 存储，UI 标签通过 textvariable 绑定后无需手动刷新。
 """
 
 import tkinter as tk
@@ -8,6 +11,7 @@ from loguru import logger
 
 from card_types import Card, Player
 
+# 字典类型别名，表示各牌面对应的数量
 CardCounts = dict[Card, int]
 
 # 一副完整的牌：除大小王各1张外，其余每种牌4张
@@ -22,16 +26,22 @@ class Counter:
     """
 
     def __init__(self) -> None:
+        # 每种牌当前剩余的张数，初始值为完整牌组
         self.remaining: dict[Card, tk.IntVar] = {
             card: tk.IntVar(value=v) for card, v in FULL_DECK.items()
         }
+
+        # 左家/右家各自出了多少张某种牌，初始全为 0
         self.left: dict[Card, tk.IntVar] = {card: tk.IntVar(value=0) for card in Card}
         self.right: dict[Card, tk.IntVar] = {card: tk.IntVar(value=0) for card in Card}
+
         # 各玩家总出牌张数（纯计数，不需要绑定 UI，用普通 int 即可）
         # MIDDLE（自己）也被跟踪，仅用于游戏结束时的合法性校验，不记录具体牌型
         self.total_played = {Player.LEFT: 0, Player.MIDDLE: 0, Player.RIGHT: 0}
 
     def reset(self) -> None:
+        """将所有计数重置为初始状态，在每局游戏开始前调用。"""
+
         for card in Card:
             self.remaining[card].set(FULL_DECK[card])
             self.left[card].set(0)
@@ -40,6 +50,7 @@ class Counter:
 
     def _deduct(self, card: Card, count: int) -> int:
         """从 remaining 扣除指定张数，返回扣除后的值。"""
+
         new_val = self.remaining[card].get() - count
         if new_val < 0:
             logger.warning(f"剩余 {card.value} 数量变为负数，可能有误识别")
@@ -48,8 +59,11 @@ class Counter:
 
     def mark_hand(self, cards: CardCounts, is_landlord: bool) -> None:
         """游戏开始时记录自己的手牌，从 remaining 整批扣除，不计入出牌数。"""
+
         for card, count in cards.items():
             self._deduct(card, count)
+
+        # 地主初始 20 张（含 3 张底牌），农民 17 张
         expected = 20 if is_landlord else 17
         if sum(cards.values()) != expected:
             logger.warning(
@@ -64,11 +78,14 @@ class Counter:
         对 LEFT/RIGHT 玩家始终为 True；对 MIDDLE（自己）为 False，
         因为自己的手牌在游戏开始时已整批从 remaining 扣除，出牌时不再重复扣。
         """
+
         if deduct_remaining:
             new_val = self._deduct(card, count)
         else:
+            # 自己出牌不扣 remaining，只读取当前值用于日志
             new_val = self.remaining[card].get()
 
+        # 更新对应玩家的出牌记录（MIDDLE 自己不记录具体牌型，只累计总数）
         if player == Player.LEFT:
             self.left[card].set(self.left[card].get() + count)
         elif player == Player.RIGHT:
@@ -79,10 +96,12 @@ class Counter:
 
     @property
     def total_remaining(self) -> int:
+        """返回当前所有牌种的剩余总张数。"""
         return sum(v.get() for v in self.remaining.values())
 
     def verify(self, landlord: Player, winner: Player) -> None:
         """游戏结束时检查计数是否在合法范围内，异常情况记录 warning。"""
+
         logger.info("开始游戏结束自检")
         remaining = self.total_remaining
 
@@ -117,6 +136,7 @@ class Counter:
                         f"{player.value} 获胜但记录了 {played} 张（超过 {max_hand}）"
                     )
             else:
+                # 未获胜的玩家出牌数不能超过最大手牌数减 1（至少还剩 1 张）
                 if played > max_hand - 1:
                     logger.warning(
                         f"{player.value} 未获胜但记录了 {played} 张（超过上限 {max_hand - 1}）"

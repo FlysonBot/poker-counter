@@ -1,6 +1,9 @@
 """
-游戏追踪模块。负责游戏主循环、帧间对比计牌、游戏开始/结束检测。
-通过帧迭代器接收图像，与截图来源解耦（支持实时截图和录屏回放）。
+游戏追踪模块。
+
+负责游戏主循环：等待游戏开始、识别初始手牌、逐帧对比出牌区域、检测游戏结束。
+通过帧迭代器接收图像，与截图来源解耦，支持实时截图和离线录屏回放两种模式。
+Tracker 类封装后端线程的启停，供 UI 层调用；run() 函数是实际的主循环逻辑。
 """
 
 from dataclasses import dataclass
@@ -11,12 +14,12 @@ from typing import Callable, Iterator, Optional
 import numpy as np
 from loguru import logger
 
-from recognition.capture import find_game_window, region_to_pixels, take_screenshot
-from recognition.calibrate import calibrate_scale
-from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
-from recognition.recognize import has_warning, identify_cards, match_mark
 from card_types import Card, Mark, Player
-from tracking.counter import Counter, CardCounts
+from config import GAME_START_INTERVAL, SCREENSHOT_INTERVAL, THRESHOLDS
+from recognition.calibrate import calibrate_scale
+from recognition.capture import find_game_window, region_to_pixels, take_screenshot
+from recognition.recognize import has_warning, identify_cards, match_mark
+from tracking.counter import CardCounts, Counter
 
 GrayImage = np.ndarray
 OnUpdateFn = Callable[[Player, CardCounts], None]  # 每次检测到出牌时的回调
@@ -29,10 +32,10 @@ OnGameEndFn = Callable[
 class GameCallbacks:
     """游戏事件回调容器，所有字段均可选。"""
 
-    on_update: Optional[OnUpdateFn] = None
-    on_reset: Optional[Callable[[], None]] = None
-    on_game_end: Optional[OnGameEndFn] = None
-    mark_potential_bombs: Optional[Callable[[set], None]] = None
+    on_update: Optional[OnUpdateFn] = None  # 每次出牌时调用
+    on_reset: Optional[Callable[[], None]] = None  # 每局开始前调用
+    on_game_end: Optional[OnGameEndFn] = None  # 游戏结束时调用
+    mark_potential_bombs: Optional[Callable[[set], None]] = None  # 识别完手牌后调用
 
 
 # ---------------------------------------------------------------------------
@@ -48,8 +51,10 @@ def live_frames(
     若窗口找不到（已关闭），沿用上一帧的位置继续尝试。
     收到停止信号后立即退出，不再产出新帧。
     """
+
     window_rect = initial_window_rect
     while not stop_event.is_set():
+        # 每帧都重新查询游戏窗口位置，以支持用户移动窗口
         latest = find_game_window()
         if latest is not None:
             window_rect = latest
@@ -69,7 +74,7 @@ def live_frames(
 
 PLAYERS = [Player.LEFT, Player.MIDDLE, Player.RIGHT]
 
-# 地主标记所在区域（剩余牌数显示区域旁边有皇冠图标）
+# 地主标记所在区域（检测该区域是否出现"[ 20 张 ]"文字，只有地主初始持有 20 张牌）
 LANDLORD_REGIONS = {
     Player.LEFT: "remaining_cards_left",
     Player.MIDDLE: "remaining_cards_middle",
@@ -107,7 +112,8 @@ def run(
 
     while not stop_event.is_set():
         # ── 等待游戏开始 ──────────────────────────────────────────────────
-        # 通过检测三个玩家的剩余牌数区域是否出现地主皇冠标记来判断游戏开始
+        # 通过检测三个玩家的剩余牌数区域是否出现"[ 20 张 ]"文字来判断游戏开始和地主位置，
+        # 因为只有地主初始持有 20 张牌，农民只有 17 张
         logger.info("等待游戏开始...")
         counter.reset()
         if callbacks.on_reset:
@@ -173,7 +179,8 @@ def run(
         prev_crops: dict[Player, GrayImage] = {}
         prev_end_crop: Optional[GrayImage] = None
         prev_end_cards: CardCounts = {}
-        last_player = Player.LEFT  # 记录最后出牌的玩家，游戏结束校验时使用；初始值为占位符，正常情况下游戏结束前必有出牌覆盖此值
+        # 记录最后出牌的玩家，游戏结束校验时使用；初始值为占位符，正常情况下游戏结束前必有出牌覆盖此值
+        last_player = Player.LEFT
 
         for frame, window_rect in frames:
             if stop_event.is_set():
@@ -266,6 +273,8 @@ class Tracker:
         self._thread: Optional[Thread] = None
 
     def start(self) -> None:
+        """启动后端识别线程。若线程已在运行则忽略。"""
+
         if self._thread and self._thread.is_alive():
             logger.warning("Tracker 已在运行中")
             return
@@ -288,10 +297,13 @@ class Tracker:
         logger.success("Tracker 已启动")
 
     def stop(self) -> None:
-        # 只发停止信号，不等待线程结束（等待由 UI 的 _wait_and_enable 轮询处理）
+        """发出停止信号。不等待线程结束（等待由 UI 的 _wait_and_enable 轮询处理）。"""
+
         self._stop_event.set()
         logger.success("Tracker 已停止")
 
     @property
     def is_running(self) -> bool:
+        """返回后端线程是否仍在运行。"""
+
         return self._thread is not None and self._thread.is_alive()

@@ -1,6 +1,9 @@
 """
-智能分析模块。根据出牌事件推算对手持牌，并在游戏结束时输出误差分析。
-不依赖 tkinter，可独立测试。
+智能分析模块。
+
+根据出牌事件推算对手持牌，并在游戏结束时输出误差分析。
+每条推算规则封装为独立方法，便于单独测试和扩展。
+不依赖 tkinter，可脱离 UI 独立运行。
 """
 
 from loguru import logger
@@ -26,11 +29,14 @@ _SEQUENCE_ORDER = [
     Card.K,
     Card.A,
 ]
+
+# 将牌映射到它在顺子序列中的下标，用于快速判断是否连续
 _SEQUENCE_INDEX = {card: i for i, card in enumerate(_SEQUENCE_ORDER)}
 
 
 def is_sequence(cards: CardCounts) -> bool:
     """判断出牌是否为顺子（每种牌恰好1张，牌面值连续，且至少5张）。"""
+
     if len(cards) < 5:
         return False
     if any(count != 1 for count in cards.values()):
@@ -38,15 +44,18 @@ def is_sequence(cards: CardCounts) -> bool:
     indices = sorted(_SEQUENCE_INDEX[c] for c in cards if c in _SEQUENCE_INDEX)
     if len(indices) != len(cards):
         return False  # 含有不能组成顺子的牌（2或JOKER）
+
+    # 判断下标是否连续：连续序列的下标等于从最小值开始的等差数列
     return indices == list(range(indices[0], indices[0] + len(indices)))
 
 
 class Estimate:
-    """单张牌对单个玩家的估算。"""
+    """单张牌对单个玩家的估算，记录估算值和置信度。"""
 
     __slots__ = ("value", "confidence")
 
     def __init__(self, value: int, confidence: str) -> None:
+
         self.value = value
         self.confidence = confidence
 
@@ -58,28 +67,41 @@ class Analyzer:
     """
 
     def __init__(self, counter: Counter) -> None:
+
         self._counter = counter
-        # 误差分析快照：每张牌对每位玩家的估算总持牌数，None 表示无法推算
+
+        # 误差分析快照：记录每张牌对每位对手的估算总持牌数，None 表示无法推算
+        # 只记录首次推算结果，游戏结束时与实际值对比，评估规则准确性
         self._estimated_total: dict[Player, dict[Card, int]] = {
             Player.LEFT: {},
             Player.RIGHT: {},
         }
 
+    # ── 生命周期 ─────────────────────────────────────────────────────────────
+
     def reset(self) -> None:
+        """每局游戏开始前清空估算快照。"""
+
         for d in self._estimated_total.values():
             d.clear()
 
     def _record_total(self, player: Player, card: Card, value: int) -> None:
         """记录首次推算出的总持牌数，供游戏结束时误差分析使用。只记录首次。"""
+
         if card not in self._estimated_total[player]:
             self._estimated_total[player][card] = value
 
+    # ── 公开接口 ─────────────────────────────────────────────────────────────
+
     def on_card_played(self, player: Player, cards: CardCounts) -> UpdateList:
         """处理出牌事件，返回需要更新的估算列表，每项为 (target_player, card, value, confidence)。"""
+
         updates: UpdateList = []
 
         for card in cards:
             remaining = self._counter.remaining[card].get()
+
+            # 依次尝试每条推算规则，符合条件的规则会往 updates 里追加推算结果
             self._rule_both_have_none(card, remaining, updates)
             self._rule_other_has_all_remaining(player, card, remaining, cards, updates)
             self._rule_player_played_all_their_cards(
@@ -88,10 +110,13 @@ class Analyzer:
 
         return updates
 
+    # ── 推算规则 ─────────────────────────────────────────────────────────────
+
     def _rule_both_have_none(
         self, card: Card, remaining: int, updates: UpdateList
     ) -> None:
         """remaining 归零时：两位对手都确定没有这张牌了，高置信度。"""
+
         if remaining != 0:
             return
         for target in (Player.LEFT, Player.RIGHT):
@@ -107,11 +132,13 @@ class Analyzer:
     ) -> None:
         """某玩家出牌后，另一方持有剩余的所有牌。
         remaining==1 且本次出牌数==1（出牌前 remaining 恰好是2）时高置信度，否则低置信度。"""
+
         if player not in (Player.LEFT, Player.RIGHT):
             return
         if remaining == 0:
             return
-        # other 在此处推导，无需从外部传入
+
+        # 推导出另一位对手
         other = Player.RIGHT if player == Player.LEFT else Player.LEFT
         confidence = "high" if remaining == 1 and cards[card] == 1 else "low"
         updates.append((other, card, remaining, confidence))
@@ -130,6 +157,7 @@ class Analyzer:
         remaining==0 时跳过 updates 写入——此时 _rule_both_have_none 已以高置信度
         覆盖双方，避免低置信度的重复写入把出牌方的绿色覆盖成红色。
         但 _record_total 仍需执行，否则误差分析会丢失这张牌的数据。"""
+
         if player not in (Player.LEFT, Player.RIGHT):
             return
         if is_sequence(cards):
@@ -139,12 +167,16 @@ class Analyzer:
             return
         updates.append((player, card, 0, "low"))
 
+    # ── 游戏结束 ─────────────────────────────────────────────────────────────
+
     def on_game_end(self, winner: Player) -> None:
         """计算并打印误差分析。winner 为最后出完牌的玩家。"""
+
         if winner == Player.MIDDLE:
             logger.info("自己获胜，无法验证对手估算")
             return
 
+        # 确定胜者和败者，以及各自对应的出牌记录
         loser = Player.RIGHT if winner == Player.LEFT else Player.LEFT
         winner_played = (
             self._counter.left if winner == Player.LEFT else self._counter.right
@@ -155,6 +187,7 @@ class Analyzer:
         winner_est = self._estimated_total[winner]
         loser_est = self._estimated_total[loser]
 
+        # 构建误差分析表格，逐张牌对比实际出牌数与估算值
         lines = [
             f"====== 估算误差分析（{winner.value}获胜）======",
             f"{'牌':>6}  {'胜-实':>5}  {'胜-估':>5}  {'胜-差':>5}  {'败-实':>5}  {'败-估':>5}  {'败-差':>5}",
@@ -164,6 +197,7 @@ class Analyzer:
         for card in Card:
             w_actual = winner_played[card].get()
             l_played = loser_played[card].get()
+
             # 败方实际持牌数 = 败方已出数 + 当前剩余数
             # 注意：remaining 包含底牌（约3张），会导致败方持牌数被轻微高估，属已知近似
             l_actual = l_played + self._counter.remaining[card].get()
@@ -171,6 +205,7 @@ class Analyzer:
             w_est = winner_est.get(card)
             l_est = loser_est.get(card)
 
+            # 估算值为 None 时显示"?"，误差也无法计算
             w_est_str = str(w_est) if w_est is not None else "?"
             l_est_str = str(l_est) if l_est is not None else "?"
             w_err = w_actual - w_est if w_est is not None else None
@@ -187,6 +222,7 @@ class Analyzer:
                 f"{card.value:>6}  {w_actual:>5}  {w_est_str:>5}  {w_err_str:>5}  {l_actual:>5}  {l_est_str:>5}  {l_err_str:>5}"
             )
 
+        # 汇总统计：覆盖率、平均绝对误差（MAE）、高估/低估张数
         total = len(Card)
         for label, errors in [(winner.value, w_errors), (loser.value, l_errors)]:
             n = len(errors)

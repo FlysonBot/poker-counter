@@ -6,13 +6,14 @@
 
 import sys
 from pathlib import Path
+
 from loguru import logger
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
 import config as _config
-from recognition.capture import find_game_window, region_to_pixels
 from config import REGIONS, raw_config
+from recognition.capture import find_game_window, region_to_pixels
 from ui.overlay_window import OverlayWindow
 
 
@@ -34,11 +35,12 @@ class OverlayManager:
 
     def __init__(self, parent) -> None:
         self._parent = parent
-        self._windows: dict[str, OverlayWindow] = {}
+        self._windows: dict[str, OverlayWindow] = {}  # 区域名 → 对应叠加窗口
         self._visible = False
 
     def toggle(self) -> None:
         """切换叠加层显示/隐藏。热键 c 调用此方法。"""
+
         if self._visible:
             self._hide()
         else:
@@ -48,6 +50,7 @@ class OverlayManager:
         """如果是首次启动，自动显示叠加层并将标志写为 false。
         只有叠加层成功显示后才写入 false，避免窗口未显示就消耗掉首次启动机会。
         """
+
         if raw_config.get("IS_FIRST_LAUNCH", False):
             logger.info("首次启动，自动显示区域调整叠加层")
             if self._show():
@@ -57,6 +60,7 @@ class OverlayManager:
         """创建并显示所有区域的叠加窗口。返回是否成功显示。
         找不到游戏窗口时，用屏幕尺寸作为 fallback，确保 overlay 始终能显示。
         """
+
         if self._visible:
             return True
 
@@ -68,11 +72,12 @@ class OverlayManager:
             sh = self._parent.winfo_screenheight()
             window_rect = (0, 0, sw, sh)
 
+        # 为 config.yaml 中每个区域创建对应的叠加窗口
         for name in REGIONS:
             x1, y1, x2, y2 = region_to_pixels(name, window_rect)
-            win = OverlayWindow(self._parent, name, x1, y1, x2, y2)
-            win.register_on_change(self._on_region_changed)
-            self._windows[name] = win
+            window = OverlayWindow(self._parent, name, x1, y1, x2, y2)
+            window.register_on_change(self._on_region_changed)
+            self._windows[name] = window
 
         self._visible = True
         logger.info("区域调整叠加层已显示")
@@ -83,8 +88,9 @@ class OverlayManager:
 
     def _hide(self) -> None:
         """销毁所有叠加窗口。"""
-        for win in self._windows.values():
-            win.destroy()
+
+        for window in self._windows.values():
+            window.destroy()
         self._windows.clear()
         self._visible = False
         logger.info("区域调整叠加层已隐藏")
@@ -93,6 +99,7 @@ class OverlayManager:
         self, region_name: str, rect: tuple[int, int, int, int]
     ) -> None:
         """用户拖拽完成后触发：把新的像素坐标转换成比例值，写回 config.yaml。"""
+
         x1, y1, x2, y2 = rect
 
         # 重新获取游戏窗口位置，把屏幕像素坐标转换回比例值
@@ -106,7 +113,7 @@ class OverlayManager:
             wl, wt = window_rect[0], window_rect[1]
             ww, wh = window_rect[2] - wl, window_rect[3] - wt
 
-        # 转换为比例值，保留 4 位小数
+        # 将像素坐标减去窗口原点，再除以窗口尺寸，得到 0.0–1.0 的比例值
         rx1 = round((x1 - wl) / ww, 4)
         ry1 = round((y1 - wt) / wh, 4)
         rx2 = round((x2 - wl) / ww, 4)
@@ -119,6 +126,7 @@ class OverlayManager:
 
     def _load_yaml(self, path: Path):
         """用 ruamel.yaml 读取配置，保留注释和格式。"""
+
         yaml = YAML()
         yaml.preserve_quotes = True
         with open(path, "r", encoding="utf-8") as f:
@@ -126,17 +134,20 @@ class OverlayManager:
 
     def _save_yaml(self, path: Path, yaml: YAML, data) -> None:
         """将数据写回 config.yaml，保留原有注释。"""
+
         with open(path, "w", encoding="utf-8") as f:
             yaml.dump(data, f)
 
     def _flow_seq(self, items) -> CommentedSeq:
         """创建 flow style 的序列，写入 yaml 时显示为行内格式 [a, b] 而非多行块。"""
+
         seq = CommentedSeq(items)
         seq.fa.set_flow_style()
         return seq
 
     def _write_region_to_yaml(self, region_name: str, value: list) -> None:
         """将单个区域的新坐标写回 config.yaml，保留注释和格式。"""
+
         path = _config_path()
         try:
             yaml, data = self._load_yaml(path)
@@ -152,6 +163,7 @@ class OverlayManager:
 
     def _set_first_launch_done(self) -> None:
         """将 IS_FIRST_LAUNCH 改为 false 并写回 config.yaml，保留注释和格式。"""
+
         path = _config_path()
         try:
             yaml, data = self._load_yaml(path)

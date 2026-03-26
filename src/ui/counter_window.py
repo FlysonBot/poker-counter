@@ -1,5 +1,9 @@
 """
-记牌器悬浮窗。显示剩余牌数和各玩家出牌数，支持拖动和热键。
+记牌器悬浮窗模块。
+
+显示剩余牌数（主窗口）或玩家出牌数（左/右窗口），支持拖动定位和热键操作。
+标签直接绑定 Counter 中的 tk.IntVar，数据变化时自动刷新，无需手动通知 UI。
+左/右窗口额外显示 Analyzer 推算的对手估算列，颜色表示置信度（绿=高，红=低）。
 """
 
 import os
@@ -12,15 +16,15 @@ from typing import TYPE_CHECKING, Any
 from ruamel.yaml import YAML
 
 if TYPE_CHECKING:
-    from ui.master_window import MasterWindow
     from tracking.counter import Counter
     from tracking.tracker import Tracker
+    from ui.master_window import MasterWindow
 
 from loguru import logger
 
 import config as _config
-from config import GUI, HOTKEYS
 from card_types import Card, WindowsType
+from config import GUI, HOTKEYS
 
 
 # ---------------------------------------------------------------------------
@@ -29,6 +33,8 @@ from card_types import Card, WindowsType
 
 
 def _open_file(filepath: str, label: str) -> None:
+    """用系统默认程序打开文件，失败时弹窗提示。"""
+
     try:
         os.startfile(filepath)
     except Exception:
@@ -37,6 +43,8 @@ def _open_file(filepath: str, label: str) -> None:
 
 
 def open_latest_log() -> None:
+    """找到最新的日志文件并用系统默认程序打开。"""
+
     # 打包后 exe 在根目录，开发时 __file__ 在 src/ui/ 下，需要往上两级才到根目录
     if getattr(sys, "frozen", False):
         base = Path(sys.executable).parent
@@ -55,6 +63,8 @@ def open_latest_log() -> None:
 
 
 def open_config() -> None:
+    """用系统默认程序打开 config.yaml 配置文件。"""
+
     if getattr(sys, "frozen", False):
         path = Path(sys.executable).parent / "config.yaml"
     else:
@@ -114,6 +124,7 @@ class CounterWindow(tk.Toplevel):
 
     def reposition(self) -> None:
         """所有窗口创建完毕、update_idletasks 之后调用，将窗口移到正确位置。"""
+
         config = self._pending_config
         w = self.winfo_width()
         h = self.winfo_height()
@@ -145,6 +156,7 @@ class CounterWindow(tk.Toplevel):
 
     def _setup_frame(self) -> ttk.Frame:
         """创建容器 frame。主窗口横向排列，左右窗口纵向排列并撑满空间。"""
+
         frame = ttk.Frame(self)
         if self.window_type == WindowsType.MAIN:
             frame.pack(padx=0, pady=0)
@@ -156,6 +168,7 @@ class CounterWindow(tk.Toplevel):
         """为每张牌创建颜色 StringVar。
         通过 trace 绑定到标签的 fg，出牌时只需更新变量，标签自动变色。
         """
+
         self._color_vars: dict[Card, tk.StringVar] = {
             card: tk.StringVar(value="black") for card in Card
         }
@@ -164,6 +177,7 @@ class CounterWindow(tk.Toplevel):
         """左右窗口专属：初始化估算列的显示值和颜色变量。
         estimate_vars 存估算张数（初始显示"?"），estimate_color_vars 存置信度颜色。
         """
+
         self._estimate_vars: dict[Card, tk.StringVar] = {
             card: tk.StringVar(value="?") for card in Card
         }
@@ -174,6 +188,7 @@ class CounterWindow(tk.Toplevel):
 
     def _build_header_row(self, frame: ttk.Frame, font_size: int) -> None:
         """左右窗口专属：在第0行创建"牌 / 出 / 剩"列标题。"""
+
         header_font = ("Arial", font_size - 2)
         for col_idx, header_text in enumerate(["牌", "出", "剩"]):
             tk.Label(
@@ -196,6 +211,7 @@ class CounterWindow(tk.Toplevel):
         - 数量标签用 textvariable 绑定 Counter.IntVar，计数变化时自动刷新显示
         - 颜色标签用 trace 监听 StringVar，出牌事件只需 set() 变量即可触发重绘
         """
+
         is_main = self.window_type == WindowsType.MAIN
         self._card_labels: dict[Card, tk.Label] = {}
         self._count_labels: dict[Card, tk.Label] = {}
@@ -279,6 +295,7 @@ class CounterWindow(tk.Toplevel):
 
     def _configure_grid(self, frame: ttk.Frame) -> None:
         """设置网格行列权重，使所有格子均匀撑满 frame。"""
+
         is_main = self.window_type == WindowsType.MAIN
         rows = 2 if is_main else len(Card) + 1
         cols = len(Card) if is_main else 3
@@ -290,9 +307,13 @@ class CounterWindow(tk.Toplevel):
     # ── 颜色更新（供 tracker 回调调用）────────────────────────────────────
 
     def set_card_color(self, card: Card, color: str) -> None:
+        """设置指定牌的颜色变量，自动触发标签重绘。"""
+
         self._color_vars[card].set(color)
 
     def reset_colors(self) -> None:
+        """重置所有颜色和估算列为初始状态，每局游戏开始时调用。"""
+
         for var in self._color_vars.values():
             var.set("black")
         if self.window_type != WindowsType.MAIN:
@@ -302,6 +323,7 @@ class CounterWindow(tk.Toplevel):
 
     def set_estimate(self, card: Card, value: int, confidence: str) -> None:
         """更新估算列。confidence: 'low'=红色, 'high'=绿色, 其他=黑色。"""
+
         color_map = {"low": "red", "high": "green"}
         self._estimate_vars[card].set(str(value))
         self._estimate_color_vars[card].set(color_map.get(confidence, "black"))
@@ -342,6 +364,7 @@ class CounterWindow(tk.Toplevel):
 
     def _drag_end(self, event: tk.Event) -> None:
         """拖动结束时把新位置写回 config.yaml，下次启动时自动恢复。"""
+
         x = self.winfo_x()
         y = self.winfo_y()
         key = self.window_type.name  # "MAIN" / "LEFT" / "RIGHT"
@@ -356,11 +379,13 @@ class CounterWindow(tk.Toplevel):
                 data = yaml.load(f)
             data["GUI"][key]["OFFSET_X"] = x
             data["GUI"][key]["OFFSET_Y"] = y
-            # 清除 CENTER_X/Y，避免与 OFFSET 冲突
+
+            # 清除 CENTER_X/Y，避免与 OFFSET 冲突（两者只能取其一）
             for k in ("CENTER_X", "CENTER_Y"):
                 data["GUI"][key].pop(k, None)
             with open(path, "w", encoding="utf-8") as f:
                 yaml.dump(data, f)
+
             # 同步更新内存，使关闭/重新打开记牌器时也读到新坐标
             _config.GUI[key]["OFFSET_X"] = x
             _config.GUI[key]["OFFSET_Y"] = y
@@ -382,8 +407,11 @@ class CounterWindow(tk.Toplevel):
 
 
 def _calculate_offset(w: int, h: int, config: dict) -> tuple[int, int]:
-    # config 里 OFFSET 和 CENTER 二选一：
-    # OFFSET 直接指定窗口左上角坐标；CENTER 指定窗口中心坐标（需要减去半个窗口尺寸换算）
+    """根据配置计算窗口左上角坐标。
+    config 里 OFFSET 和 CENTER 二选一：
+    OFFSET 直接指定窗口左上角坐标；CENTER 指定窗口中心坐标（需减去半个窗口尺寸换算）。
+    """
+
     if config.get("OFFSET_X") is not None:
         x = config["OFFSET_X"]
     elif config.get("CENTER_X") is not None:

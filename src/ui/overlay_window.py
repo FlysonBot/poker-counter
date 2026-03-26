@@ -6,6 +6,7 @@
 
 import tkinter as tk
 from typing import TYPE_CHECKING
+
 from loguru import logger
 
 from config import HOTKEYS
@@ -40,6 +41,7 @@ class OverlayWindow(tk.Toplevel):
         region_name: 区域名称，显示在窗口上作为标识
         x1, y1, x2, y2: 初始像素坐标（相对于屏幕）
         """
+
         super().__init__(parent)
 
         self._region_name = region_name
@@ -84,7 +86,7 @@ class OverlayWindow(tk.Toplevel):
         self.geometry(f"{w}x{h}+{x1}+{y1}")
 
         # ── 拖拽状态 ──────────────────────────────────────────────────────
-        self._drag_data = {}  # 记录拖拽起始信息
+        self._drag_data = {}  # 记录拖拽起始信息（模式、起始坐标、初始窗口几何）
 
         # ── 绑定事件 ──────────────────────────────────────────────────────
         # 内部区域：移动窗口
@@ -110,6 +112,7 @@ class OverlayWindow(tk.Toplevel):
 
     def register_on_change(self, callback) -> None:
         """注册坐标变化回调，在用户释放鼠标后触发。"""
+
         self._on_change_callback = callback
 
     # ── 移动逻辑 ──────────────────────────────────────────────────────────
@@ -119,6 +122,7 @@ class OverlayWindow(tk.Toplevel):
         self._drag_data = {"mode": "move", "x": event.x, "y": event.y}
 
     def _move_do(self, event: tk.Event) -> None:
+        # 用当前鼠标位置减去起始偏移，得到窗口新的左上角坐标
         x = self.winfo_x() + (event.x - self._drag_data["x"])
         y = self.winfo_y() + (event.y - self._drag_data["y"])
         self.geometry(f"+{x}+{y}")
@@ -129,6 +133,7 @@ class OverlayWindow(tk.Toplevel):
         """根据鼠标在窗口内的位置，判断拖拽的是哪条边/角。
         返回方向字符串，例如 'nw'、'n'、'e'、'se' 等，空字符串表示内部。
         """
+
         w = self.winfo_width()
         h = self.winfo_height()
         on_left = x < BORDER
@@ -136,6 +141,7 @@ class OverlayWindow(tk.Toplevel):
         on_top = y < BORDER
         on_bottom = y > h - BORDER
 
+        # 先判断四个角，再判断四条边
         if on_top and on_left:
             return "nw"
         if on_top and on_right:
@@ -156,6 +162,7 @@ class OverlayWindow(tk.Toplevel):
 
     def _update_cursor(self, event: tk.Event) -> None:
         """鼠标移动时根据位置更新光标形状，提示用户可以拖拽的方向。"""
+
         edge = self._get_edge(event.x, event.y)
         cursor_map = {
             "nw": "top_left_corner",
@@ -166,7 +173,7 @@ class OverlayWindow(tk.Toplevel):
             "s": "bottom_side",
             "w": "left_side",
             "e": "right_side",
-            "": "fleur",
+            "": "fleur",  # 十字箭头，表示可移动
         }
         self.config(cursor=cursor_map.get(edge, "arrow"))
 
@@ -176,7 +183,7 @@ class OverlayWindow(tk.Toplevel):
             # 点在边框内部（非边缘）：改为移动模式
             self._drag_data = {"mode": "move", "x": event.x, "y": event.y}
             return
-        # 记录拖拽起始时的窗口几何信息和鼠标屏幕坐标
+        # 记录拖拽起始时的窗口几何信息和鼠标屏幕坐标，用于缩放计算
         self._drag_data = {
             "mode": "resize",
             "edge": edge,
@@ -198,8 +205,8 @@ class OverlayWindow(tk.Toplevel):
             return
 
         d = self._drag_data
-        dx = event.x_root - d["start_x"]
-        dy = event.y_root - d["start_y"]
+        dx = event.x_root - d["start_x"]  # 鼠标相对起始位置的水平位移
+        dy = event.y_root - d["start_y"]  # 鼠标相对起始位置的垂直位移
         edge = d["edge"]
 
         x, y = d["orig_x"], d["orig_y"]
@@ -207,6 +214,7 @@ class OverlayWindow(tk.Toplevel):
         MIN = BORDER * 4  # 最小窗口尺寸，防止缩得太小无法操作
 
         # 根据拖拽的边/角方向计算新的位置和尺寸
+        # 拖右/下边：直接加上位移；拖左/上边：同时需要移动窗口原点
         if "e" in edge:
             w = max(w + dx, MIN)
         if "s" in edge:
@@ -224,6 +232,7 @@ class OverlayWindow(tk.Toplevel):
 
     def _on_release(self, event: tk.Event) -> None:
         """鼠标释放时触发保存回调。"""
+
         if self._on_change_callback and self._drag_data:
             self._on_change_callback(self._region_name, self.get_rect())
         self._drag_data = {}
@@ -232,6 +241,7 @@ class OverlayWindow(tk.Toplevel):
 
     def get_rect(self) -> tuple[int, int, int, int]:
         """返回当前窗口的屏幕坐标 (x1, y1, x2, y2)。"""
+
         x = self.winfo_x()
         y = self.winfo_y()
         return x, y, x + self.winfo_width(), y + self.winfo_height()
