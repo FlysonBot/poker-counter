@@ -82,7 +82,9 @@ class Analyzer:
             remaining = self._counter.remaining[card].get()
             self._rule_both_have_none(card, remaining, updates)
             self._rule_other_has_all_remaining(player, card, remaining, cards, updates)
-            self._rule_player_played_all_their_cards(player, card, cards, updates)
+            self._rule_player_played_all_their_cards(
+                player, card, remaining, cards, updates
+            )
 
         return updates
 
@@ -116,16 +118,26 @@ class Analyzer:
         self._record_total(other, card, remaining)
 
     def _rule_player_played_all_their_cards(
-        self, player: Player, card: Card, cards: CardCounts, updates: UpdateList
+        self,
+        player: Player,
+        card: Card,
+        remaining: int,
+        cards: CardCounts,
+        updates: UpdateList,
     ) -> None:
         """出牌方打出某张牌且不是顺子时，推断其没有更多这张牌，低置信度。
-        误差分析记录出牌数作为估算总数，用于验证"不拆牌"假设的准确率。"""
+        误差分析记录出牌数作为估算总数，用于验证"不拆牌"假设的准确率。
+        remaining==0 时跳过 updates 写入——此时 _rule_both_have_none 已以高置信度
+        覆盖双方，避免低置信度的重复写入把出牌方的绿色覆盖成红色。
+        但 _record_total 仍需执行，否则误差分析会丢失这张牌的数据。"""
         if player not in (Player.LEFT, Player.RIGHT):
             return
         if is_sequence(cards):
             return
-        updates.append((player, card, 0, "low"))
         self._record_total(player, card, cards[card])
+        if remaining == 0:
+            return
+        updates.append((player, card, 0, "low"))
 
     def on_game_end(self, winner: Player) -> None:
         """计算并打印误差分析。winner 为最后出完牌的玩家。"""
