@@ -49,17 +49,6 @@ def is_sequence(cards: CardCounts) -> bool:
     return indices == list(range(indices[0], indices[0] + len(indices)))
 
 
-class Estimate:
-    """单张牌对单个玩家的估算，记录估算值和置信度。"""
-
-    __slots__ = ("value", "confidence")
-
-    def __init__(self, value: int, confidence: str) -> None:
-
-        self.value = value
-        self.confidence = confidence
-
-
 class Analyzer:
     """
     根据出牌事件推算对手持牌估算，并在游戏结束时输出误差分析。

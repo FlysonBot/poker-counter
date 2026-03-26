@@ -98,13 +98,13 @@ def _nms_matches(
     # 按置信度从高到低排序，优先保留最可信的匹配
     matches = sorted(matches, key=lambda x: x[0], reverse=True)
     kept = []
-    for conf, (x, y) in matches:
+    for conf, (mx, my) in matches:  # mx/my: 当前匹配点坐标；kx/ky: 已保留点坐标
         # 如果与已保留的某个匹配点距离太近，认为是同一张牌，丢弃
         too_close = any(
-            abs(x - kx) < min_dist and abs(y - ky) < min_dist for _, (kx, ky) in kept
+            abs(mx - kx) < min_dist and abs(my - ky) < min_dist for _, (kx, ky) in kept
         )
         if not too_close:
-            kept.append((conf, (x, y)))
+            kept.append((conf, (mx, my)))
     return kept
 
 

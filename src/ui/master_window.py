@@ -6,21 +6,18 @@
 并通过 GameCallbacks 接收后端出牌事件，将结果分发到各悬浮窗。
 """
 
-import sys
 import tkinter as tk
-from pathlib import Path
 
 from loguru import logger
-from ruamel.yaml import YAML
 
 import config as _config
 from card_types import Player, WindowsType
-from config import GUI, HOTKEYS
+from config import GUI, HOTKEYS, config_dir
 from tracking.analyzer import Analyzer
 from tracking.counter import CardCounts, Counter
 from tracking.tracker import GameCallbacks, Tracker
 from ui.counter_window import CounterWindow, _calculate_offset
-from ui.overlay_manager import OverlayManager
+from ui.overlay_manager import OverlayManager, load_yaml, save_yaml
 
 
 class MasterWindow(tk.Tk):
@@ -64,7 +61,7 @@ class MasterWindow(tk.Tk):
         # 必须在按钮创建前初始化，因为"调整"按钮的 command 通过 toggle_overlay() 引用它
         self._overlay = OverlayManager(self)
         hotkey = HOTKEYS.get("TOGGLE_OVERLAY", "c")
-        self.bind(f"<KeyPress-{hotkey}>", lambda e: self._overlay.toggle())
+        self.bind(f"<KeyPress-{hotkey}>", lambda _e: self._overlay.toggle())
 
         # 开关按钮：打开/关闭记牌器，text 和 command 会在开关时动态切换
         self._btn_switch = tk.Button(
@@ -222,11 +219,12 @@ class MasterWindow(tk.Tk):
         # 委托 analyzer 推算对手持牌，再把结果写入对应悬浮窗的估算列
         updates = self._analyzer.on_card_played(player, cards)
         for target, card, value, confidence in updates:
-            window = target_windows.get(player_wintype.get(target))
+            wintype = player_wintype.get(target)
+            window = target_windows.get(wintype) if wintype is not None else None
             if window:
                 window.set_estimate(card, value, confidence)
 
-    def _on_game_end(self, winner: Player, landlord: Player) -> None:
+    def _on_game_end(self, winner: Player, _landlord: Player) -> None:
         """游戏结束时输出误差分析。"""
         self._analyzer.on_game_end(winner)
 
@@ -255,7 +253,7 @@ class MasterWindow(tk.Tk):
             y = self.winfo_y() + dy
             self.geometry(f"+{x}+{y}")
 
-    def _on_drag_end(self, event: tk.Event) -> None:
+    def _on_drag_end(self, _event: tk.Event) -> None:
         # 如果没有真正拖动（只是点击），直接返回
         if not self._dragging:
             return
@@ -265,22 +263,15 @@ class MasterWindow(tk.Tk):
 
         # 拖动结束时把新位置写回 config.yaml，下次启动时自动恢复
         try:
-            if getattr(sys, "frozen", False):
-                path = Path(sys.executable).parent / "config.yaml"
-            else:
-                path = Path(__file__).parent.parent / "config.yaml"
-            yaml = YAML()
-            yaml.preserve_quotes = True
-            with open(path, encoding="utf-8") as f:
-                data = yaml.load(f)
+            path = config_dir() / "config.yaml"
+            yaml, data = load_yaml(path)
             data["GUI"]["SWITCH"]["OFFSET_X"] = x
             data["GUI"]["SWITCH"]["OFFSET_Y"] = y
 
             # 清除 CENTER_X/Y，避免与 OFFSET 冲突（两者只能取其一）
             for k in ("CENTER_X", "CENTER_Y"):
                 data["GUI"]["SWITCH"].pop(k, None)
-            with open(path, "w", encoding="utf-8") as f:
-                yaml.dump(data, f)
+            save_yaml(path, yaml, data)
 
             # 同步更新内存，使下次读取时也是最新坐标
             _config.GUI["SWITCH"]["OFFSET_X"] = x

@@ -184,7 +184,6 @@ class CounterWindow(tk.Toplevel):
         self._estimate_color_vars: dict[Card, tk.StringVar] = {
             card: tk.StringVar(value="black") for card in Card
         }
-        self._estimate_labels: dict[Card, tk.Label] = {}
 
     def _build_header_row(self, frame: ttk.Frame, font_size: int) -> None:
         """左右窗口专属：在第0行创建"牌 / 出 / 剩"列标题。"""
@@ -213,8 +212,6 @@ class CounterWindow(tk.Toplevel):
         """
 
         is_main = self.window_type == WindowsType.MAIN
-        self._card_labels: dict[Card, tk.Label] = {}
-        self._count_labels: dict[Card, tk.Label] = {}
 
         # make_label：统一样式的标签工厂，所有格子共用相同的边框和对齐设置
         def make_label(**kw: Any) -> tk.Label:
@@ -230,13 +227,13 @@ class CounterWindow(tk.Toplevel):
 
         # get_var：根据窗口类型选择对应的计数器变量
         # 主窗口显示剩余数，左/右窗口分别显示左家/右家的出牌数
-        def get_var(card: Card) -> tk.IntVar:
+        def get_var(c: Card) -> tk.IntVar:
             if is_main:
-                return self._counter.remaining[card]
+                return self._counter.remaining[c]
             elif self.window_type == WindowsType.LEFT:
-                return self._counter.left[card]
+                return self._counter.left[c]
             else:
-                return self._counter.right[card]
+                return self._counter.right[c]
 
         # 逐张牌创建标签行，放入网格
         for idx, card in enumerate(Card):
@@ -288,10 +285,6 @@ class CounterWindow(tk.Toplevel):
                         fg=self._estimate_color_vars[c].get()
                     ),
                 )
-                self._estimate_labels[card] = est_lbl
-
-            self._card_labels[card] = card_lbl
-            self._count_labels[card] = count_lbl
 
     def _configure_grid(self, frame: ttk.Frame) -> None:
         """设置网格行列权重，使所有格子均匀撑满 frame。"""
@@ -362,7 +355,7 @@ class CounterWindow(tk.Toplevel):
         y = self.winfo_y() + (event.y - self._drag_y)
         self.geometry(f"+{x}+{y}")
 
-    def _drag_end(self, event: tk.Event) -> None:
+    def _drag_end(self, _event: tk.Event) -> None:
         """拖动结束时把新位置写回 config.yaml，下次启动时自动恢复。"""
 
         x = self.winfo_x()

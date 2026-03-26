@@ -32,7 +32,7 @@ def _full_screen_rect() -> Rect:
     with mss.mss() as sct:
         # monitors[0] 是所有显示器合并后的虚拟屏幕，monitors[1] 起才是单个显示器
         m = sct.monitors[0]
-        return (0, 0, m["width"], m["height"])
+        return 0, 0, m["width"], m["height"]
 
 
 def find_game_window() -> Rect:
@@ -50,7 +50,7 @@ def find_game_window() -> Rect:
             logger.warning(f"未找到标题含 '{GAME_WINDOW_TITLE}' 的窗口，将使用全屏截图")
             return _full_screen_rect()
         w = wins[0]
-        return (w.left, w.top, w.left + w.width, w.top + w.height)
+        return w.left, w.top, w.left + w.width, w.top + w.height
     except ImportError:
         logger.warning("pygetwindow 不可用（非 Windows 环境），将截取全屏")
         return _full_screen_rect()

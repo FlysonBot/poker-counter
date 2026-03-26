@@ -9,7 +9,7 @@ from pathlib import Path
 from ruamel.yaml import YAML
 
 
-def _config_dir() -> Path:
+def config_dir() -> Path:
     """返回配置文件所在目录。
     打包后（PyInstaller frozen）配置文件与 exe 同级；
     开发时配置文件与本模块同级（src/ 目录下）。
@@ -21,7 +21,7 @@ def _config_dir() -> Path:
 
 
 def _load() -> dict:
-    path = _config_dir() / "config.yaml"
+    path = config_dir() / "config.yaml"
     ryaml = YAML()
     with open(path, encoding="utf-8") as f:
         return dict(ryaml.load(f))

@@ -4,7 +4,6 @@
 将调整后的坐标转换回比例值并写回 config.yaml。
 """
 
-import sys
 from pathlib import Path
 
 from loguru import logger
@@ -12,16 +11,33 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
 import config as _config
-from config import REGIONS, raw_config
+from config import REGIONS, config_dir, raw_config
 from recognition.capture import find_game_window, region_to_pixels
 from ui.overlay_window import OverlayWindow
 
 
-# config.yaml 的路径（与 config.py 里的逻辑一致）
-def _config_path() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent / "config.yaml"
-    return Path(__file__).parent.parent / "config.yaml"
+def load_yaml(path: Path):
+    """用 ruamel.yaml 读取配置，保留注释和格式。返回 (yaml, data) 元组。"""
+
+    yaml = YAML()
+    yaml.preserve_quotes = True
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml, yaml.load(f)
+
+
+def save_yaml(path: Path, yaml: YAML, data) -> None:
+    """将数据写回 yaml 文件，保留原有注释。"""
+
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f)
+
+
+def flow_seq(items) -> CommentedSeq:
+    """创建 flow style 的序列，写入 yaml 时显示为行内格式 [a, b] 而非多行块。"""
+
+    seq = CommentedSeq(items)
+    seq.fa.set_flow_style()
+    return seq
 
 
 class OverlayManager:
@@ -56,6 +72,19 @@ class OverlayManager:
             if self._show():
                 self._set_first_launch_done()
 
+    def _get_window_rect(self) -> tuple[int, int, int, int]:
+        """获取游戏窗口矩形，找不到时 fallback 到屏幕尺寸。
+        返回 (x1, y1, x2, y2) 格式的屏幕坐标。
+        """
+
+        window_rect = find_game_window()
+        if window_rect is None:
+            logger.warning("找不到游戏窗口，使用屏幕尺寸作为 fallback")
+            sw = self._parent.winfo_screenwidth()
+            sh = self._parent.winfo_screenheight()
+            return (0, 0, sw, sh)
+        return window_rect
+
     def _show(self) -> bool:
         """创建并显示所有区域的叠加窗口。返回是否成功显示。
         找不到游戏窗口时，用屏幕尺寸作为 fallback，确保 overlay 始终能显示。
@@ -64,13 +93,7 @@ class OverlayManager:
         if self._visible:
             return True
 
-        # 优先用游戏窗口位置，找不到时 fallback 到屏幕尺寸
-        window_rect = find_game_window()
-        if window_rect is None:
-            logger.warning("找不到游戏窗口，使用屏幕尺寸显示叠加层")
-            sw = self._parent.winfo_screenwidth()
-            sh = self._parent.winfo_screenheight()
-            window_rect = (0, 0, sw, sh)
+        window_rect = self._get_window_rect()
 
         # 为 config.yaml 中每个区域创建对应的叠加窗口
         for name in REGIONS:
@@ -103,15 +126,8 @@ class OverlayManager:
         x1, y1, x2, y2 = rect
 
         # 重新获取游戏窗口位置，把屏幕像素坐标转换回比例值
-        # 找不到游戏窗口时用屏幕尺寸作为 fallback（与 _show 的 fallback 保持一致）
-        window_rect = find_game_window()
-        if window_rect is None:
-            sw = self._parent.winfo_screenwidth()
-            sh = self._parent.winfo_screenheight()
-            wl, wt, ww, wh = 0, 0, sw, sh
-        else:
-            wl, wt = window_rect[0], window_rect[1]
-            ww, wh = window_rect[2] - wl, window_rect[3] - wt
+        wl, wt, wr, wb = self._get_window_rect()
+        ww, wh = wr - wl, wb - wt
 
         # 将像素坐标减去窗口原点，再除以窗口尺寸，得到 0.0–1.0 的比例值
         rx1 = round((x1 - wl) / ww, 4)
@@ -124,37 +140,16 @@ class OverlayManager:
         )
         self._write_region_to_yaml(region_name, [[rx1, ry1], [rx2, ry2]])
 
-    def _load_yaml(self, path: Path):
-        """用 ruamel.yaml 读取配置，保留注释和格式。"""
-
-        yaml = YAML()
-        yaml.preserve_quotes = True
-        with open(path, "r", encoding="utf-8") as f:
-            return yaml, yaml.load(f)
-
-    def _save_yaml(self, path: Path, yaml: YAML, data) -> None:
-        """将数据写回 config.yaml，保留原有注释。"""
-
-        with open(path, "w", encoding="utf-8") as f:
-            yaml.dump(data, f)
-
-    def _flow_seq(self, items) -> CommentedSeq:
-        """创建 flow style 的序列，写入 yaml 时显示为行内格式 [a, b] 而非多行块。"""
-
-        seq = CommentedSeq(items)
-        seq.fa.set_flow_style()
-        return seq
-
     def _write_region_to_yaml(self, region_name: str, value: list) -> None:
         """将单个区域的新坐标写回 config.yaml，保留注释和格式。"""
 
-        path = _config_path()
+        path = config_dir() / "config.yaml"
         try:
-            yaml, data = self._load_yaml(path)
+            yaml, data = load_yaml(path)
             # 用 flow style 写坐标，保持与原始格式一致：[ [x1, y1], [x2, y2] ]
-            flow_value = self._flow_seq([self._flow_seq(pt) for pt in value])
+            flow_value = flow_seq([flow_seq(pt) for pt in value])
             data["REGIONS"][region_name] = flow_value
-            self._save_yaml(path, yaml, data)
+            save_yaml(path, yaml, data)
             # 同步更新内存中的 REGIONS，使叠加层重新打开时读到最新坐标
             _config.REGIONS[region_name] = value
             logger.success(f"已将区域 [{region_name}] 保存到 config.yaml")
@@ -164,11 +159,11 @@ class OverlayManager:
     def _set_first_launch_done(self) -> None:
         """将 IS_FIRST_LAUNCH 改为 false 并写回 config.yaml，保留注释和格式。"""
 
-        path = _config_path()
+        path = config_dir() / "config.yaml"
         try:
-            yaml, data = self._load_yaml(path)
+            yaml, data = load_yaml(path)
             data["IS_FIRST_LAUNCH"] = False
-            self._save_yaml(path, yaml, data)
+            save_yaml(path, yaml, data)
             logger.info("已将 IS_FIRST_LAUNCH 设为 false")
         except Exception as e:
             logger.error(f"写入 IS_FIRST_LAUNCH 失败: {e}")
